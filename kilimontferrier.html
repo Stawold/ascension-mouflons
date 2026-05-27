@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Au Sommet du Kilimontferrier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { background: #0f172a; margin: 0; font-family: system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // ============================================================
+    // DONNÉES DU JEU
+    // ============================================================
+    const RESOURCES = {
+      SANDWICH:    { id: 'sandwich',    name: 'Sandwich',    icon: '🥪', hasPortions: true  },
+      EAU:         { id: 'eau',         name: 'Eau',         icon: '💧', hasPortions: true  },
+      MATELAS:     { id: 'matelas',     name: 'Matelas',     icon: '🛏️', hasPortions: false },
+      CORDE:       { id: 'corde',       name: 'Corde',       icon: '🪢', hasPortions: false, consumable: true },
+      BOUSSOLE:    { id: 'boussole',    name: 'Boussole',    icon: '🧭', hasPortions: false },
+      CHAUFFERETTE:{ id: 'chaufferette',name: 'Chaufferette',icon: '🔥', hasPortions: false, consumable: true },
+      LAMPE:       { id: 'lampe',       name: 'Lampe Torche',icon: '🔦', hasPortions: false },
+      CARTE:       { id: 'carte',       name: 'Carte',       icon: '🗺️', hasPortions: false, consumable: true },
+      THERMOS:     { id: 'thermos',     name: 'Thermos',     icon: '☕', hasPortions: false, consumable: true },
+      BONUS_MORAL: { id: 'bonus_moral', name: 'Bénédiction', icon: '🙏', hasPortions: false, noSlot: true },
+    };
+
+    const CHAPTERS = {
+      1: {
+        id: 1, title: 'Chapitre 1 — Le Camp de Base',
+        altitude: 0, day: 1, weather: '☀️ Soleil',
+        narrative: `Le soleil se lève sur le camp de base du Kilimontferrier. L'air frais du matin porte les promesses d'une grande aventure. Vous êtes réunis autour du feu de camp, sacs à dos prêts, regards tournés vers les sommets enneigés qui vous attendent.\n\nLe village local s'éveille doucement. Des habitants curieux vous observent. C'est le moment de prendre une décision avant de vous élancer vers les hauteurs.`,
+        d18Events: {
+          low:  { effect: 'flag_tempete',             narratorText: '(1-6) Un vieux montagnard vous intercepte : "Attention, une tempête se prépare sur les hauteurs !"' },
+          mid:  { effect: null,                        narratorText: '(7-12) Le départ se passe sans incident particulier.' },
+          high: { effect: 'give_thermos',              narratorText: '(13-18) Un sherpa souriant vous tend un Thermos : "Pour le voyage, mes amis !"' },
+        },
+        choices: [
+          { id: 1, label: 'Partir léger et vite',   description: 'Vous vous élancez sans cérémonie, économisant vos forces.', effects: [], alwaysAvailable: true },
+          { id: 2, label: 'Cérémonie de départ',    description: 'Vous effectuez une cérémonie de bénédiction avec les locaux.', effects: [{ type: 'add_bonus_moral_all' }], alwaysAvailable: true },
+          { id: 3, label: 'Consulter la carte',     description: 'Vous étudiez soigneusement la carte du terrain avant de partir.', effects: [{ type: 'energy_all', value: -5 }, { type: 'give_carte_one' }, { type: 'flag_carte_consulted' }], alwaysAvailable: true },
+        ],
+        consumption: [], fatigue: 0,
+      },
+      2: {
+        id: 2, title: "Chapitre 2 — La Forêt S'Épaissit",
+        altitude: 500, day: 2, weather: '🌧️ Pluie',
+        narrative: `La forêt se referme sur vous comme un manteau vert et humide. La pluie commence à tomber, d'abord légère, puis plus insistante. Les sentiers se transforment en ruisseaux boueux, et vos pas s'alourdissent.\n\nLa végétation dense cache le ciel, et vous devez vous frayer un chemin parmi les fougères géantes et les racines noueuses. Malgré la fatigue, la beauté sauvage de cet endroit est indéniable.`,
+        d18Events: {
+          low:  { effect: 'moral_minus5_all',              narratorText: '(1-6) BOUH ! Un chamois surgit brusquement des fourrés. Tout le monde perd 5 de Moral !' },
+          mid:  { effect: 'moral_minus10_if_no_warning',   narratorText: '(7-12) La pluie redouble d\'intensité — personne n\'avait prévu ça !' },
+          high: { effect: 'energy_plus5_all_give_lampe',   narratorText: '(13-18) Une grotte ! Vous trouvez même une lampe torche à l\'intérieur. +5 Énergie à tous !' },
+        },
+        choices: [
+          { id: 1, label: 'Continuer droit',   description: "Vous poussez de l'avant sans vous arrêter.", effects: [], alwaysAvailable: true },
+          { id: 2, label: 'Trouver un abri',   description: 'Vous cherchez un abri pour passer la nuit, mais perdrez du temps.', effects: [{ type: 'flag_abri_ch2' }], alwaysAvailable: true },
+        ],
+        consumption: [{ resource: 'sandwich', portions: 1, perPlayer: true }], fatigue: -5,
+      },
+      3: {
+        id: 3, title: 'Chapitre 3 — La Forêt Révèle ses Secrets',
+        altitude: 1000, day: 3, weather: '☁️ Nuageux',
+        narrative: `La forêt prend une dimension mystérieuse dans la lumière grise du matin. Les arbres s'élèvent comme des colonnes de cathédrale, et vos voix résonnent étrangement dans ce silence habité.\n\nLa montée devient plus prononcée. Vos mollets brûlent, votre souffle se fait plus court. Mais quelque chose dans cette forêt vous attire, comme si elle avait des secrets à vous révéler...`,
+        d18Events: {
+          low:  { effect: 'moral_minus5_one',  narratorText: '(1-6) Les marmottes font des bruits moqueurs... Celui qui fait la blague la plus nulle perd 5 Moral !' },
+          mid:  { effect: null,                narratorText: '(7-12) La montée continue sans surprise.' },
+          high: { effect: 'refuge_choice',     narratorText: "(13-18) Un passage étroit dans les rochers mène à ce qui semble être un refuge ! Un joueur peut tenter de s'y faufiler..." },
+        },
+        choices: [
+          { id: 1, label: 'Continuer vers les hauteurs', description: 'Vous gardez le cap.', effects: [], alwaysAvailable: true },
+          { id: 2, label: 'Explorer les alentours',      description: 'Vous fouillez la forêt et trouvez des provisions cachées.', effects: [{ type: 'energy_all', value: -5 }, { type: 'give_sandwiches_3' }], alwaysAvailable: true },
+          { id: 3, label: 'Accélérer le pas',            description: "Un joueur prend la tête du groupe, les autres peinent à suivre.", effects: [{ type: 'energy_others', value: -5, note: 'Choisir le Meneur' }], alwaysAvailable: true },
+        ],
+        consumption: [{ resource: 'sandwich', portions: 1, perPlayer: true }], fatigue: -8, fatigueAbri: -10,
+      },
+      4: {
+        id: 4, title: 'Chapitre 4 — La Traversée du Torrent',
+        altitude: 1300, day: 4, weather: '☀️ Soleil',
+        narrative: `Vous entendez le torrent avant de le voir — un grondement sourd qui enfle à mesure que vous approchez. Puis il apparaît : une rivière tumultueuse, les eaux glaciales bondissant sur les rochers.\n\nLa traversée est inévitable. Le Kilimontferrier vous attend de l'autre côté. Comment allez-vous franchir cet obstacle ?`,
+        d18Events: {
+          low:  { effect: 'moral_minus5_one_lose_resource', narratorText: '(1-6) Attention ! Une glissade... et une ressource tombe dans le torrent !' },
+          mid:  { effect: null,                             narratorText: '(7-12) La traversée se fait sans incident particulier.' },
+          high: { effect: 'moral_plus10_all_give_boussole', narratorText: '(13-18) Des truites arc-en-ciel bondissent à vos pieds ! +10 Moral à tous, et vous trouvez une Boussole dans les rochers !' },
+        },
+        choices: [
+          { id: 1, label: 'Traverser en ligne directe', description: 'Cap droit devant ! Vous traversez le torrent à gué.', effects: [], alwaysAvailable: true },
+          { id: 2, label: 'Point de traversée sûr',     description: 'Vous cherchez un passage plus calme, plus loin en amont.', effects: [{ type: 'energy_all', value: -8 }, { type: 'moral_all', value: 5 }], alwaysAvailable: true },
+          { id: 3, label: 'Utiliser la Corde',          description: 'Vous tendez une corde pour sécuriser le passage. La corde sera usée.', effects: [{ type: 'energy_all', value: -5 }, { type: 'moral_all', value: 10 }, { type: 'consume_corde' }], requiresResource: 'corde' },
+          { id: 4, label: "Chemin de l'Ouest (Carte)",  description: "Vous contournez par l'Ouest. Un ours rôde... Combat D6 !", effects: [{ type: 'bear_fight' }], requiresResource: 'carte', requiresFlag: 'flag_carte_consulted' },
+        ],
+        consumption: [{ resource: 'sandwich', portions: 1, perPlayer: true }], fatigue: -12,
+      },
+    };
+
+    const MAX_SLOTS = 6;
+    const STORAGE_KEY = 'kilimontferrier_state';
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    const createInitialState = (playerNames) => ({
+      currentChapter: 1, currentDay: 1, currentAltitude: 0,
+      flags: {}, diceHistory: [], lastD18Result: null, lastD6Result: null,
+      d18EventApplied: false, choiceMade: false, chapterPhase: 'narrative',
+      players: playerNames.map((name, index) => ({
+        id: index, name, energy: 100, moral: 100, isKO: false, bonusMoral: false,
+        inventory: [
+          { resourceId: 'sandwich', portions: 3, wet: false },
+          { resourceId: 'eau',      portions: 3, wet: false },
+          { resourceId: 'matelas',  portions: null, wet: false },
+        ],
+      })),
+      gameOver: false, gameOverReason: null, victory: false,
+    });
+
+    const saveState = (state) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORAGE_KEY + '_ts', Date.now().toString());
+      } catch(e) {}
+    };
+    const loadState = () => {
+      try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+    };
+    const clearState = () => {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY + '_ts');
+    };
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    const getResById = (id) => Object.values(RESOURCES).find(r => r.id === id);
+    const getUsedSlots = (inventory) => inventory.filter(i => !getResById(i.resourceId)?.noSlot).length;
+
+    const consumeResourceFromPlayer = (player, resourceId, portions) => {
+      let remaining = portions;
+      const inv = [...player.inventory];
+      for (let i = 0; i < inv.length && remaining > 0; i++) {
+        const item = inv[i];
+        if (item.resourceId === resourceId && !item.wet) {
+          if (item.portions !== null) {
+            const take = Math.min(item.portions, remaining);
+            inv[i] = { ...item, portions: item.portions - take };
+            remaining -= take;
+            if (inv[i].portions <= 0) inv.splice(i, 1);
+          } else {
+            inv.splice(i, 1);
+            remaining--;
+          }
+        }
+      }
+      return inv;
+    };
+
+    const isChoiceAvailable = (choice, gameState) => {
+      if (choice.requiresResource) {
+        const has = gameState.players.some(p => !p.isKO && p.inventory.some(i => i.resourceId === choice.requiresResource && !i.wet));
+        if (!has) return false;
+      }
+      if (choice.requiresFlag && !gameState.flags[choice.requiresFlag]) return false;
+      return true;
+    };
+
+    const getChapterEmoji = (ch) => ({ 1:'🏕️',2:'🌲',3:'🌿',4:'🌊',5:'🏔️',6:'🦅' }[ch] || '⛰️');
+
+    // ============================================================
+    // APP ROOT
+    // ============================================================
+    function App() {
+      const [view, setView] = useState('home');
+      const [gameState, setGameState] = useState(null);
+
+      useEffect(() => {
+        const handleStorage = (e) => {
+          if (e.key === STORAGE_KEY) { const s = loadState(); if (s) setGameState(s); }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+      }, []);
+
+      useEffect(() => {
+        if (view !== 'player') return;
+        const interval = setInterval(() => {
+          const saved = loadState();
+          if (saved) setGameState(prev => JSON.stringify(saved) !== JSON.stringify(prev) ? saved : prev);
+        }, 500);
+        return () => clearInterval(interval);
+      }, [view]);
+
+      const updateState = useCallback((updater) => {
+        setGameState(prev => {
+          const next = typeof updater === 'function' ? updater(prev) : updater;
+          saveState(next);
+          return next;
+        });
+      }, []);
+
+      const startGame = (playerNames) => {
+        const s = createInitialState(playerNames);
+        saveState(s); setGameState(s); setView('master');
+      };
+
+      const resetGame = () => { clearState(); setGameState(null); setView('home'); };
+
+      if (view === 'home') return <HomeScreen onNew={() => setView('setup')} onMaster={() => { const s = loadState(); if(s){setGameState(s);setView('master');}else alert('Aucune partie sauvegardée.'); }} onPlayer={() => { const s = loadState(); if(s){setGameState(s);setView('player');}else alert('Aucune partie en cours.'); }} />;
+      if (view === 'setup') return <SetupScreen onStart={startGame} onBack={() => setView('home')} />;
+      if (view === 'master' && gameState) return <MasterScreen gameState={gameState} updateState={updateState} onReset={resetGame} onSwitchToPlayer={() => setView('player')} />;
+      if (view === 'player' && gameState) return <PlayerScreen gameState={gameState} onBack={() => setView('home')} />;
+      return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Chargement...</div>;
+    }
+
+    // ============================================================
+    // HOME SCREEN
+    // ============================================================
+    function HomeScreen({ onNew, onMaster, onPlayer }) {
+      return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-center p-6">
+          <div className="text-center mb-12">
+            <div className="text-7xl mb-4">⛰️</div>
+            <h1 className="text-4xl font-bold text-white mb-1">Au Sommet du</h1>
+            <h1 className="text-5xl font-bold text-blue-300 mb-4">Kilimontferrier</h1>
+            <p className="text-slate-400 text-lg">Jeu d'aventure narratif pour 2–6 joueurs</p>
+          </div>
+          <div className="flex flex-col gap-4 w-full max-w-xs">
+            <button onClick={onNew} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl text-xl transition-colors shadow-lg">🚀 Nouvelle Partie</button>
+            <button onClick={onMaster} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 px-8 rounded-xl text-xl transition-colors">🎬 Écran Régie</button>
+            <button onClick={onPlayer} className="bg-green-700 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl text-xl transition-colors">🎮 Écran Joueurs</button>
+          </div>
+          <div className="mt-10 text-slate-600 text-xs text-center max-w-sm">
+            <p>Ouvrez cet onglet sur l'écran du Narrateur → Régie</p>
+            <p className="mt-1">Ouvrez un second onglet → Écran Joueurs (se synchronise automatiquement)</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // SETUP SCREEN
+    // ============================================================
+    function SetupScreen({ onStart, onBack }) {
+      const [count, setCount] = useState(3);
+      const [names, setNames] = useState(['Joueur 1','Joueur 2','Joueur 3','','','']);
+
+      const changeCount = (n) => {
+        setCount(n);
+        setNames(prev => {
+          const next = [...prev];
+          for (let i = 0; i < 6; i++) {
+            if (!next[i] || next[i] === `Joueur ${i+1}`) next[i] = i < n ? `Joueur ${i+1}` : '';
+          }
+          return next;
+        });
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 to-blue-950 flex flex-col items-center justify-center p-6">
+          <div className="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">⛰️ Configuration</h2>
+            <div className="mb-5">
+              <label className="text-slate-300 text-sm font-semibold mb-2 block">Nombre de joueurs</label>
+              <div className="flex gap-2">
+                {[2,3,4,5,6].map(n => (
+                  <button key={n} onClick={() => changeCount(n)} className={`flex-1 py-2 rounded-lg font-bold transition-colors ${count===n ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>{n}</button>
+                ))}
+              </div>
+            </div>
+            <div className="mb-6 space-y-3">
+              <label className="text-slate-300 text-sm font-semibold block">Noms des joueurs</label>
+              {Array.from({ length: count }).map((_, i) => (
+                <input key={i} type="text" value={names[i]||''} onChange={e => { const n=[...names]; n[i]=e.target.value; setNames(n); }} placeholder={`Joueur ${i+1}`} className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onBack} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold">← Retour</button>
+              <button onClick={() => onStart(names.slice(0,count).map((n,i) => n.trim()||`Joueur ${i+1}`))} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold">🚀 Démarrer !</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // MASTER SCREEN
+    // ============================================================
+    function MasterScreen({ gameState, updateState, onReset, onSwitchToPlayer }) {
+      const [d18Input, setD18Input] = useState('');
+      const [d6Input, setD6Input]   = useState('');
+      const [d18Result, setD18Result] = useState(null);
+      const [d6Result, setD6Result]   = useState(null);
+      const [showInventoryModal, setShowInventoryModal] = useState(null);
+      const [narratorLog, setNarratorLog] = useState([]);
+      const [bearScores, setBearScores] = useState({});
+      const [bearOursScore, setBearOursScore] = useState('');
+      const [showBearFight, setShowBearFight] = useState(false);
+
+      const chapter = CHAPTERS[gameState.currentChapter];
+      const addLog = (msg) => setNarratorLog(prev => [`[Ch.${gameState.currentChapter}] ${msg}`, ...prev].slice(0, 25));
+
+      const applyD18Event = (roll) => {
+        const evt = roll <= 6 ? chapter.d18Events.low : roll <= 12 ? chapter.d18Events.mid : chapter.d18Events.high;
+        addLog(evt.narratorText);
+        updateState(prev => {
+          let next = { ...prev, d18EventApplied: true, lastD18Result: roll };
+          const players = prev.players.map(p => ({ ...p, inventory: [...p.inventory] }));
+
+          if (chapter.id === 1) {
+            if (evt.effect === 'flag_tempete') next.flags = { ...next.flags, tempete: true };
+            if (evt.effect === 'give_thermos') {
+              const t = players.find(p => !p.isKO && getUsedSlots(p.inventory) < MAX_SLOTS);
+              if (t) t.inventory = [...t.inventory, { resourceId:'thermos', portions:null, wet:false }];
+            }
+          }
+          if (chapter.id === 2) {
+            if (evt.effect === 'moral_minus5_all') players.forEach(p => { if(!p.isKO) p.moral = Math.max(0, p.moral-5); });
+            if (evt.effect === 'moral_minus10_if_no_warning' && !prev.flags.tempete) players.forEach(p => { if(!p.isKO) p.moral = Math.max(0, p.moral-10); });
+            if (evt.effect === 'energy_plus5_all_give_lampe') {
+              players.forEach(p => { if(!p.isKO) p.energy = Math.min(100, p.energy+5); });
+              const t = players.find(p => !p.isKO && getUsedSlots(p.inventory) < MAX_SLOTS);
+              if (t) t.inventory = [...t.inventory, { resourceId:'lampe', portions:null, wet:false }];
+            }
+          }
+          if (chapter.id === 3) {
+            if (evt.effect === 'moral_minus5_one') addLog('Désignez le joueur qui perd 5 Moral (la blague la plus nulle).');
+            if (evt.effect === 'refuge_choice') addLog("Demandez à un joueur s'il veut entrer dans le refuge. Si oui, lancez D6.");
+          }
+          if (chapter.id === 4) {
+            if (evt.effect === 'moral_minus5_one_lose_resource') addLog('Désignez le joueur qui glisse. Il perd 5 Moral et une ressource spécialisée.');
+            if (evt.effect === 'moral_plus10_all_give_boussole') {
+              players.forEach(p => { if(!p.isKO) p.moral = Math.min(100, p.moral+10); });
+              const t = players.find(p => !p.isKO && getUsedSlots(p.inventory) < MAX_SLOTS);
+              if (t) t.inventory = [...t.inventory, { resourceId:'boussole', portions:null, wet:false }];
+            }
+          }
+          return { ...next, players };
+        });
+      };
+
+      const applyChoice = (choiceId) => {
+        const choice = chapter.choices.find(c => c.id === choiceId);
+        if (!choice) return;
+        addLog(`Choix ${choiceId} : "${choice.label}"`);
+        updateState(prev => {
+          let next = { ...prev, choiceMade: true, chapterPhase: 'done' };
+          const players = prev.players.map(p => ({ ...p, inventory: [...p.inventory] }));
+
+          for (const eff of choice.effects) {
+            if (eff.type === 'energy_all')        players.forEach(p => { if(!p.isKO) p.energy = Math.max(0, Math.min(100, p.energy+eff.value)); });
+            if (eff.type === 'moral_all')          players.forEach(p => { if(!p.isKO) p.moral  = Math.max(0, Math.min(100, p.moral +eff.value)); });
+            if (eff.type === 'add_bonus_moral_all') players.forEach(p => { if(!p.isKO) p.bonusMoral = true; });
+            if (eff.type === 'give_carte_one') {
+              const t = players.find(p => !p.isKO && getUsedSlots(p.inventory) < MAX_SLOTS);
+              if (t) t.inventory = [...t.inventory, { resourceId:'carte', portions:null, wet:false }];
+            }
+            if (eff.type === 'flag_carte_consulted') next.flags = { ...next.flags, flag_carte_consulted: true };
+            if (eff.type === 'give_sandwiches_3') {
+              let given = 0;
+              for (const p of players) { if (!p.isKO && given < 3) { p.inventory = [...p.inventory, { resourceId:'sandwich', portions:1, wet:false }]; given++; } }
+            }
+            if (eff.type === 'consume_corde') {
+              for (const p of players) { const idx = p.inventory.findIndex(i => i.resourceId==='corde'); if(idx!==-1){p.inventory.splice(idx,1);break;} }
+            }
+            if (eff.type === 'bear_fight') {
+              next.flags = { ...next.flags, bearFight: true };
+              setShowBearFight(true);
+            }
+            if (eff.type === 'flag_abri_ch2') next.flags = { ...next.flags, abri_ch2: true };
+          }
+          players.forEach(p => { if(p.energy <= 0) p.isKO = true; });
+          const allKO = players.every(p => p.isKO);
+          const avgMoral = players.reduce((s,p) => s+p.moral, 0) / players.length;
+          return { ...next, players, gameOver: allKO || avgMoral <= 0, gameOverReason: allKO ? 'Tous les joueurs sont évanouis !' : avgMoral <= 0 ? 'Le moral collectif est à zéro — abandon !' : null };
+        });
+      };
+
+      const applyBearFight = () => {
+        const oursScore = parseInt(bearOursScore);
+        if (isNaN(oursScore)) return;
+        updateState(prev => {
+          const players = prev.players.map(p => {
+            if (p.isKO) return p;
+            const ps = bearScores[p.id] ? parseInt(bearScores[p.id]) : 0;
+            const newEnergy = ps < oursScore ? Math.max(0, p.energy-5) : p.energy;
+            return { ...p, energy: newEnergy, isKO: newEnergy <= 0 };
+          });
+          for (const p of players) { const idx = p.inventory.findIndex(i => i.resourceId==='carte'); if(idx!==-1){p.inventory.splice(idx,1);break;} }
+          return { ...prev, players, chapterPhase:'done', choiceMade:true, currentChapter: 6 };
+        });
+        setShowBearFight(false);
+        addLog(`Combat ours ! Score ours: ${oursScore}. Résultats appliqués.`);
+      };
+
+      const advanceChapter = () => {
+        const nextId = gameState.currentChapter + 1;
+        if (!CHAPTERS[nextId]) { addLog('Fin de la V1 ! Chapitres suivants à venir...'); return; }
+        const nextCh = CHAPTERS[nextId];
+        updateState(prev => {
+          const players = prev.players.map(p => ({ ...p, inventory: [...p.inventory] }));
+          let fatigue = nextCh.fatigue || 0;
+          if (nextId === 3 && prev.flags.abri_ch2) fatigue += nextCh.fatigueAbri || 0;
+          players.forEach(p => { if(!p.isKO) p.energy = Math.max(0, p.energy + fatigue); });
+          for (const c of (nextCh.consumption || [])) {
+            if (c.perPlayer) players.forEach(p => { if(!p.isKO) p.inventory = consumeResourceFromPlayer(p, c.resource, c.portions); });
+          }
+          players.forEach(p => { if(p.energy <= 0) p.isKO = true; });
+          return { ...prev, currentChapter: nextId, currentDay: nextCh.day, currentAltitude: nextCh.altitude, players, d18EventApplied: false, choiceMade: false, chapterPhase:'narrative', lastD18Result:null, lastD6Result:null };
+        });
+        setD18Result(null); setD6Result(null);
+      };
+
+      if (gameState.gameOver) return (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white">
+          <div className="text-7xl mb-4">💀</div>
+          <h2 className="text-3xl font-bold text-red-400 mb-4">FIN DE PARTIE</h2>
+          <p className="text-xl mb-8">{gameState.gameOverReason}</p>
+          <button onClick={onReset} className="bg-red-600 hover:bg-red-500 font-bold py-3 px-8 rounded-xl">Nouvelle Partie</button>
+        </div>
+      );
+
+      return (
+        <div className="min-h-screen bg-slate-900 text-white p-3">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3 bg-slate-800 rounded-xl p-3 flex-wrap gap-2">
+            <h1 className="text-lg font-bold text-blue-300">⛰️ RÉGIE — Kilimontferrier</h1>
+            <div className="flex items-center gap-2 text-sm flex-wrap">
+              <span className="bg-blue-900 px-2 py-1 rounded-lg">Jour {gameState.currentDay}/12</span>
+              <span className="bg-green-900 px-2 py-1 rounded-lg">{gameState.currentAltitude}m</span>
+              <span className="bg-slate-700 px-2 py-1 rounded-lg">{chapter?.weather}</span>
+              <button onClick={onSwitchToPlayer} className="bg-green-700 hover:bg-green-600 px-2 py-1 rounded-lg">👁️ Joueurs</button>
+              <button onClick={onReset} className="bg-red-800 hover:bg-red-700 px-2 py-1 rounded-lg">🔄 Reset</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Left col */}
+            <div className="lg:col-span-2 space-y-3">
+              {/* Chapter */}
+              <div className="bg-slate-800 rounded-xl p-4">
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <h2 className="text-base font-bold text-yellow-300">{chapter?.title}</h2>
+                  <button onClick={advanceChapter} disabled={!gameState.choiceMade} className={`shrink-0 px-3 py-2 rounded-lg font-bold text-sm transition-colors ${gameState.choiceMade ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>⏭️ Chapitre Suivant</button>
+                </div>
+                <p className="text-slate-300 text-sm whitespace-pre-line leading-relaxed">{chapter?.narrative}</p>
+              </div>
+
+              {/* Dice */}
+              <div className="bg-slate-800 rounded-xl p-4">
+                <h3 className="font-bold mb-3 text-purple-300">🎲 Dés</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-700 rounded-lg p-3">
+                    <div className="text-sm font-semibold mb-2 text-purple-200">D18 — Événements</div>
+                    <div className="flex gap-2 mb-2">
+                      <input type="number" min="1" max="18" value={d18Input} onChange={e => setD18Input(e.target.value)} className="flex-1 bg-slate-600 text-white rounded px-2 py-1 text-center" placeholder="1–18" />
+                      <button onClick={() => { const r=parseInt(d18Input); if(r>=1&&r<=18){setD18Result(r);applyD18Event(r);} }} className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded font-bold text-sm">Appliquer</button>
+                    </div>
+                    {d18Result && <div className="text-center"><span className="text-2xl font-bold text-yellow-300">{d18Result}</span><span className="text-xs text-slate-400 ml-2">{d18Result<=6?'Bas':d18Result<=12?'Moyen':'Haut'}</span></div>}
+                    <div className="mt-2 text-xs text-slate-500">1-6: Bas · 7-12: Moyen · 13-18: Haut</div>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg p-3">
+                    <div className="text-sm font-semibold mb-2 text-orange-200">D6 — Combat / Refuge</div>
+                    <div className="flex gap-2 mb-2">
+                      <input type="number" min="1" max="6" value={d6Input} onChange={e => setD6Input(e.target.value)} className="flex-1 bg-slate-600 text-white rounded px-2 py-1 text-center" placeholder="1–6" />
+                      <button onClick={() => { const r=parseInt(d6Input); if(r>=1&&r<=6){setD6Result(r);addLog(`D6 : ${r}`);} }} className="bg-orange-600 hover:bg-orange-500 px-2 py-1 rounded font-bold text-sm">Appliquer</button>
+                    </div>
+                    {d6Result && <div className="text-center text-2xl font-bold text-yellow-300">{d6Result}</div>}
+                    <div className="mt-2 text-xs text-slate-500">Refuge Ch.3 · Combat ours Ch.4</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Choices */}
+              <div className="bg-slate-800 rounded-xl p-4">
+                <h3 className="font-bold mb-3 text-green-300">🎯 Choix du Chapitre</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {chapter?.choices.map(choice => {
+                    const avail = isChoiceAvailable(choice, gameState);
+                    return (
+                      <button key={choice.id} onClick={() => avail && !gameState.choiceMade && applyChoice(choice.id)} disabled={!avail || gameState.choiceMade}
+                        className={`p-3 rounded-lg text-left transition-colors ${gameState.choiceMade ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : avail ? 'bg-green-800 hover:bg-green-700 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>
+                        <div className="font-bold text-sm">Choix {choice.id}</div>
+                        <div className="text-xs mt-1 font-medium">{choice.label}</div>
+                        {!avail && <div className="text-xs text-red-400 mt-1">{choice.requiresResource ? `Nécessite: ${getResById(choice.requiresResource)?.name}` : 'Non disponible'}</div>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {gameState.choiceMade && <p className="text-green-400 text-xs mt-2 text-center">✅ Choix effectué — cliquez "Chapitre Suivant" pour continuer</p>}
+              </div>
+
+              {/* Log */}
+              <div className="bg-slate-800 rounded-xl p-4">
+                <h3 className="font-bold mb-2 text-slate-400">📜 Journal Narrateur</h3>
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                  {narratorLog.length === 0
+                    ? <p className="text-slate-500 text-sm italic">Aucun événement enregistré.</p>
+                    : narratorLog.map((log, i) => <div key={i} className="text-xs text-slate-300 bg-slate-700 rounded px-2 py-1">{log}</div>)
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Players */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-slate-300 text-center">👥 Joueurs</h3>
+              {gameState.players.map(player => (
+                <MasterPlayerCard key={player.id} player={player}
+                  onEdit={() => setShowInventoryModal(player.id)}
+                  onStatChange={(stat, delta) => updateState(prev => ({ ...prev, players: prev.players.map(p => p.id===player.id ? {...p, [stat]:Math.max(0,Math.min(100,p[stat]+delta))} : p) }))}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Bear Fight Modal */}
+          {showBearFight && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+              <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                <h3 className="text-xl font-bold text-orange-300 mb-4">🐻 Combat contre l'Ours !</h3>
+                <p className="text-slate-300 text-sm mb-4">Lancez D6 pour l'Ours, puis D6 pour chaque joueur. Si joueur ≥ Ours : pas de dégâts. Si joueur &lt; Ours : -5 Énergie.</p>
+                <div className="mb-4">
+                  <label className="text-slate-300 text-sm block mb-1">Score de l'Ours (D6)</label>
+                  <input type="number" min="1" max="6" value={bearOursScore} onChange={e => setBearOursScore(e.target.value)} className="bg-slate-700 text-white rounded px-3 py-2 w-24 text-center text-xl font-bold" />
+                </div>
+                <div className="mb-4 space-y-2">
+                  {gameState.players.filter(p => !p.isKO).map(p => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      <span className="text-slate-300 text-sm w-28">{p.name}</span>
+                      <input type="number" min="1" max="6" value={bearScores[p.id]||''} onChange={e => setBearScores(prev => ({...prev,[p.id]:e.target.value}))} className="bg-slate-700 text-white rounded px-3 py-2 w-20 text-center" placeholder="D6" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowBearFight(false)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Annuler</button>
+                  <button onClick={applyBearFight} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white py-2 rounded-lg font-bold">Appliquer !</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Inventory Modal */}
+          {showInventoryModal !== null && (
+            <InventoryModal
+              player={gameState.players.find(p => p.id === showInventoryModal)}
+              onClose={() => setShowInventoryModal(null)}
+              onUpdate={(inv) => { updateState(prev => ({ ...prev, players: prev.players.map(p => p.id===showInventoryModal ? {...p, inventory:inv} : p) })); setShowInventoryModal(null); }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function MasterPlayerCard({ player, onEdit, onStatChange }) {
+      const eCol = player.energy > 60 ? 'bg-green-500' : player.energy > 30 ? 'bg-yellow-500' : 'bg-red-500';
+      const mCol = player.moral  > 60 ? 'bg-blue-500'  : player.moral  > 30 ? 'bg-purple-500' : 'bg-red-500';
+      return (
+        <div className={`bg-slate-800 rounded-xl p-3 ${player.isKO ? 'opacity-50' : ''}`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-bold text-sm">{player.isKO ? '💀' : '🧑'} {player.name}</div>
+            <button onClick={onEdit} className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded">✏️ Inv.</button>
+          </div>
+          <div className="space-y-1 mb-2">
+            {[['energy','Énergie',eCol],['moral','Moral',mCol]].map(([key,label,col]) => (
+              <div key={key} className="flex items-center gap-1">
+                <span className="text-xs text-slate-400 w-12">{label}</span>
+                <div className="flex-1 bg-slate-700 rounded-full h-2.5"><div className={`${col} h-2.5 rounded-full`} style={{width:`${player[key]}%`}}/></div>
+                <button onClick={() => onStatChange(key,-5)} className="text-xs bg-red-900 hover:bg-red-800 px-1 rounded">-5</button>
+                <span className="text-xs w-7 text-center font-bold">{player[key]}</span>
+                <button onClick={() => onStatChange(key, 5)} className="text-xs bg-green-900 hover:bg-green-800 px-1 rounded">+5</button>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {player.inventory.map((item, idx) => {
+              const res = getResById(item.resourceId);
+              return <span key={idx} className={`text-xs px-1 py-0.5 rounded ${item.wet ? 'bg-slate-700 text-slate-500' : 'bg-slate-600 text-white'}`}>{res?.icon}{res?.name?.split(' ')[0]}{item.portions!==null?`×${item.portions}`:''}{item.wet?'💦':''}</span>;
+            })}
+            {player.bonusMoral && <span className="text-xs px-1 py-0.5 rounded bg-yellow-900 text-yellow-300">🙏</span>}
+          </div>
+        </div>
+      );
+    }
+
+    function InventoryModal({ player, onClose, onUpdate }) {
+      const [inventory, setInventory] = useState([...player.inventory]);
+      const [addId, setAddId] = useState('sandwich');
+
+      const addItem = () => {
+        const res = getResById(addId);
+        if (!res) return;
+        setInventory(prev => [...prev, { resourceId: res.id, portions: res.hasPortions ? 3 : null, wet: false }]);
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold mb-1">📦 Inventaire — {player.name}</h3>
+            <p className="text-slate-400 text-xs mb-3">Emplacements : {getUsedSlots(inventory)}/{MAX_SLOTS}</p>
+            <div className="space-y-2 mb-4 max-h-56 overflow-y-auto">
+              {inventory.map((item, idx) => {
+                const res = getResById(item.resourceId);
+                return (
+                  <div key={idx} className="flex items-center gap-2 bg-slate-700 rounded-lg p-2">
+                    <span className="text-xl">{res?.icon}</span>
+                    <span className="flex-1 text-sm">{res?.name}{item.portions!==null?` (${item.portions} portions)`:''}</span>
+                    <button onClick={() => setInventory(prev => prev.map((it,i) => i===idx?{...it,wet:!it.wet}:it))} className={`text-xs px-2 py-1 rounded ${item.wet?'bg-blue-800 text-blue-200':'bg-slate-600'}`}>💧</button>
+                    <button onClick={() => setInventory(prev => prev.filter((_,i) => i!==idx))} className="text-xs bg-red-800 hover:bg-red-700 px-2 py-1 rounded">✕</button>
+                  </div>
+                );
+              })}
+              {inventory.length === 0 && <p className="text-slate-500 text-sm italic text-center">Inventaire vide</p>}
+            </div>
+            <div className="flex gap-2 mb-4">
+              <select value={addId} onChange={e => setAddId(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-3 py-2">
+                {Object.values(RESOURCES).map(r => <option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
+              </select>
+              <button onClick={addItem} className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg font-bold">+ Ajouter</button>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Annuler</button>
+              <button onClick={() => onUpdate(inventory)} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold">Sauvegarder</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // PLAYER SCREEN
+    // ============================================================
+    function PlayerScreen({ gameState, onBack }) {
+      const chapter = CHAPTERS[gameState.currentChapter];
+
+      return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white">
+          {/* Header */}
+          <div className="bg-slate-900/90 sticky top-0 z-10 px-4 py-3 border-b border-slate-700/50">
+            <div className="flex items-center justify-between max-w-6xl mx-auto flex-wrap gap-2">
+              <div>
+                <h1 className="text-lg font-bold text-blue-300">⛰️ Au Sommet du Kilimontferrier</h1>
+                <p className="text-slate-500 text-xs">{chapter?.title}</p>
+              </div>
+              <div className="flex gap-2 text-xs">
+                <div className="bg-blue-900/60 px-2 py-1 rounded-lg text-center"><div className="text-blue-300 font-bold">Jour</div><div className="font-bold text-sm">{gameState.currentDay}/12</div></div>
+                <div className="bg-green-900/60 px-2 py-1 rounded-lg text-center"><div className="text-green-300 font-bold">Altitude</div><div className="font-bold text-sm">{gameState.currentAltitude}m</div></div>
+                <div className="bg-slate-800 px-2 py-1 rounded-lg text-center"><div className="text-yellow-300 font-bold">Météo</div><div className="font-bold text-sm">{chapter?.weather}</div></div>
+              </div>
+              <button onClick={onBack} className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg text-sm">← Menu</button>
+            </div>
+          </div>
+
+          {gameState.gameOver && (
+            <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
+              <div className="text-8xl mb-6">💀</div>
+              <h2 className="text-4xl font-bold text-red-400 mb-4">FIN DE PARTIE</h2>
+              <p className="text-white text-xl text-center px-8">{gameState.gameOverReason}</p>
+            </div>
+          )}
+
+          <div className="max-w-6xl mx-auto p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Main */}
+              <div className="lg:col-span-2 space-y-5">
+                {/* Illustration */}
+                <div className="bg-gradient-to-br from-slate-800 to-blue-900 rounded-2xl overflow-hidden border border-blue-800/40" style={{aspectRatio:'16/7',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <div className="text-center">
+                    <div className="text-8xl mb-3">{getChapterEmoji(gameState.currentChapter)}</div>
+                    <div className="text-2xl font-bold text-blue-300">{chapter?.title}</div>
+                    <div className="text-slate-400 mt-1">{chapter?.weather} • {gameState.currentAltitude}m d'altitude</div>
+                  </div>
+                </div>
+
+                {/* Narrative */}
+                <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/50">
+                  <h3 className="text-base font-bold text-yellow-300 mb-3">📖 Narration</h3>
+                  <p className="text-slate-200 leading-relaxed whitespace-pre-line">{chapter?.narrative}</p>
+                </div>
+
+                {/* Choices */}
+                <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/50">
+                  <h3 className="text-base font-bold text-green-300 mb-3">🎯 Choix disponibles</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {chapter?.choices.map(choice => {
+                      const avail = isChoiceAvailable(choice, gameState);
+                      return (
+                        <div key={choice.id} className={`rounded-xl p-4 border-2 ${avail ? 'border-green-600 bg-green-900/20' : 'border-slate-700 bg-slate-800/50'}`}>
+                          <div className="font-bold text-sm mb-1">{avail ? '✅' : '🔒'} Choix {choice.id}</div>
+                          <div className={`font-semibold text-sm mb-1 ${avail ? 'text-white' : 'text-slate-500'}`}>{choice.label}</div>
+                          <div className={`text-xs ${avail ? 'text-slate-300' : 'text-slate-600'}`}>{choice.description}</div>
+                          {!avail && choice.requiresResource && <div className="text-xs text-red-400 mt-2">🔒 Nécessite : {getResById(choice.requiresResource)?.name}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-slate-600 text-xs mt-3 text-center italic">Le Narrateur annoncera le choix retenu</p>
+                </div>
+              </div>
+
+              {/* Players sidebar */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-slate-300 text-center text-lg">👥 Équipe d'aventuriers</h3>
+                {gameState.players.map(player => <PlayerCard key={player.id} player={player} />)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PlayerCard({ player }) {
+      const isKO = player.isKO;
+      const eCol = player.energy > 60 ? 'bg-green-500' : player.energy > 30 ? 'bg-yellow-500' : 'bg-red-500';
+      const mCol = player.moral  > 60 ? 'bg-blue-500'  : player.moral  > 30 ? 'bg-purple-500' : 'bg-red-500';
+      const slots = player.inventory.filter(i => !getResById(i.resourceId)?.noSlot);
+
+      return (
+        <div className={`rounded-2xl border p-4 ${isKO ? 'border-red-900 bg-red-950/20 opacity-60' : 'border-slate-700 bg-slate-800/70'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="text-2xl">{isKO ? '💀' : '🧑'}</div>
+            <div><div className="font-bold">{player.name}</div>{isKO && <div className="text-red-400 text-xs">Évanoui(e)</div>}</div>
+          </div>
+          {!isKO && (<>
+            <div className="space-y-2 mb-4">
+              {[['energy','⚡ Énergie',eCol],['moral','💙 Moral',mCol]].map(([key,label,col]) => (
+                <div key={key}>
+                  <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">{label}</span><span className="font-bold">{player[key]}/100</span></div>
+                  <div className="bg-slate-700 rounded-full h-4"><div className={`${col} h-4 rounded-full transition-all`} style={{width:`${player[key]}%`}}/></div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="text-xs text-slate-400 mb-2">🎒 Inventaire ({slots.length}/{MAX_SLOTS})</div>
+              <div className="grid grid-cols-3 gap-1">
+                {Array.from({length:MAX_SLOTS}).map((_,si) => {
+                  const item = slots[si];
+                  const res = item ? getResById(item.resourceId) : null;
+                  return (
+                    <div key={si} className={`rounded-lg p-1 text-center border flex flex-col items-center justify-center min-h-12 ${item ? item.wet ? 'border-slate-600 bg-slate-700/40 opacity-50' : 'border-slate-500 bg-slate-700' : 'border-slate-800 bg-slate-900/20 border-dashed'}`}>
+                      {item ? (<>
+                        <div className="text-xl">{res?.icon||'?'}</div>
+                        <div className="text-slate-300 leading-tight" style={{fontSize:'10px'}}>{res?.name?.split(' ')[0]}{item.portions!==null?` ×${item.portions}`:''}</div>
+                        {item.wet && <div style={{fontSize:'9px'}} className="text-blue-400">💧mouillé</div>}
+                      </>) : <div className="text-slate-700 text-sm">—</div>}
+                    </div>
+                  );
+                })}
+              </div>
+              {player.bonusMoral && <div className="mt-2 text-xs bg-yellow-900/40 text-yellow-300 rounded-lg px-2 py-1 text-center">🙏 Bénédiction de départ</div>}
+            </div>
+          </>)}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
