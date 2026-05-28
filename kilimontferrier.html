@@ -102,6 +102,21 @@
 
   /* ── Narrative first-letter ── */
   .narrative p::first-letter{font-family:var(--font-display);font-size:2.8em;float:left;line-height:.82;margin:0 5px 0 0;color:var(--ink);}
+
+  /* ── Responsive grids ── */
+  .layout-master{display:grid;grid-template-columns:1fr 1fr 280px;gap:10px;align-items:start;}
+  .layout-player{display:grid;grid-template-columns:1fr 1fr 260px;gap:12px;align-items:start;}
+  .layout-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .layout-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  @media(max-width:768px){
+    .layout-master,.layout-player{grid-template-columns:1fr;}
+    .layout-master .main-cols,.layout-player .main-cols{grid-column:auto!important;}
+    .layout-2col{grid-template-columns:1fr;}
+    .layout-3col{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:480px){
+    .layout-3col{grid-template-columns:1fr;}
+  }
   </style>
 </head>
 <body>
@@ -298,7 +313,7 @@ function App() {
   if (view==='setup')  return <SetupScreen onStart={start} onBack={()=>setView('home')} />;
   if (view==='master' && gs) return <MasterScreen gs={gs} upd={upd} onReset={reset} onPlayer={()=>setView('player')} />;
   if (view==='player' && gs) return <PlayerScreen gs={gs} onBack={()=>setView('home')} />;
-  return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Chargement...</div>;
+  return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--font-type)',color:'var(--ink-faded)',fontSize:'14px',letterSpacing:'.1em'}}>Chargement...</div>;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -306,19 +321,23 @@ function App() {
 // ═══════════════════════════════════════════════════════
 function HomeScreen({onNew,onMaster,onPlayer}) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-center p-6">
-      <div className="text-center mb-10">
-        <div className="text-7xl mb-4">🦌</div>
-        <h1 className="text-5xl font-bold text-white mb-1">Ascension</h1>
-        <h1 className="text-5xl font-bold text-blue-300 mb-4">&amp; Mouflons</h1>
-        <p className="text-slate-400 text-lg">Jeu d'aventure narratif • 2–6 joueurs</p>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+      <div className="paper" style={{maxWidth:'420px',width:'100%',borderRadius:'4px',padding:'52px 40px',boxShadow:'var(--shadow-page)',textAlign:'center',position:'relative'}}>
+        <div className="deco-stitches"/>
+        <div style={{fontFamily:'var(--font-pixel)',fontSize:'80px',lineHeight:'1',marginBottom:'14px'}}>🦌</div>
+        <h1 style={{fontFamily:'var(--font-display)',fontSize:'40px',margin:'0 0 4px',letterSpacing:'.04em',color:'var(--ink)'}}>Ascension</h1>
+        <div style={{fontFamily:'var(--font-hand)',fontSize:'26px',color:'var(--ink-soft)',marginBottom:'8px'}}>&amp; Mouflons</div>
+        <div style={{fontFamily:'var(--font-type)',fontSize:'10px',letterSpacing:'.15em',color:'var(--ink-faded)',marginBottom:'36px',textTransform:'uppercase'}}>Jeu narratif · 2–6 joueurs</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'28px'}}>
+          <button className="btn btn-primary" onClick={onNew} style={{fontSize:'14px',padding:'12px 20px'}}>Nouvelle Partie</button>
+          <button className="btn" onClick={onMaster}>Reprendre — Régie</button>
+          <button className="btn btn-green" onClick={onPlayer}>Rejoindre — Joueurs</button>
+        </div>
+        <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',lineHeight:'1.8',borderTop:'1px dashed var(--paper-edge)',paddingTop:'16px'}}>
+          Ouvrir deux onglets dans le même navigateur<br/>
+          Onglet 1 → Régie &nbsp;·&nbsp; Onglet 2 → Joueurs
+        </div>
       </div>
-      <div className="flex flex-col gap-3 w-full max-w-xs">
-        <button onClick={onNew}    className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-xl">🚀 Nouvelle Partie</button>
-        <button onClick={onMaster} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">🎬 Reprendre — Régie</button>
-        <button onClick={onPlayer} className="bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl">🎮 Rejoindre — Écran Joueurs</button>
-      </div>
-      <p className="mt-8 text-slate-600 text-xs text-center">Ouvrir deux onglets dans le même navigateur<br/>Onglet 1 → Régie &nbsp;|&nbsp; Onglet 2 → Joueurs</p>
     </div>
   );
 }
@@ -331,20 +350,34 @@ function SetupScreen({onStart,onBack}) {
   const [names,setNames] = useState(['Joueur 1','Joueur 2','Joueur 3','','','']);
   const changeCount = (n) => { setCount(n); setNames(p=>{ const x=[...p]; for(let i=0;i<6;i++) if(!x[i]||x[i]===`Joueur ${i+1}`) x[i]=i<n?`Joueur ${i+1}`:''; return x; }); };
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-blue-950 flex flex-col items-center justify-center p-6">
-      <div className="bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        <h2 className="text-2xl font-bold text-white mb-6 text-center">🦌 Nouvelle Partie</h2>
-        <div className="mb-5">
-          <label className="text-slate-300 text-sm font-semibold mb-2 block">Nombre de joueurs</label>
-          <div className="flex gap-2">{[2,3,4,5,6].map(n=><button key={n} onClick={()=>changeCount(n)} className={`flex-1 py-2 rounded-lg font-bold ${count===n?'bg-blue-600 text-white':'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>{n}</button>)}</div>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+      <div className="paper" style={{maxWidth:'440px',width:'100%',borderRadius:'4px',padding:'40px 36px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+        <div className="deco-stitches"/>
+        <h2 style={{fontFamily:'var(--font-display)',fontSize:'24px',textAlign:'center',marginBottom:'28px',letterSpacing:'.05em',color:'var(--ink)'}}>Nouvelle Partie</h2>
+        <div style={{marginBottom:'22px'}}>
+          <div className="section-label">Nombre de joueurs</div>
+          <div style={{display:'flex',gap:'8px'}}>
+            {[2,3,4,5,6].map(n=>(
+              <button key={n} onClick={()=>changeCount(n)}
+                className={count===n?'btn btn-primary btn-sm':'btn btn-sm'}
+                style={{flex:1,padding:'6px 0',fontSize:'15px',fontFamily:'var(--font-pixel)'}}>
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="mb-6 space-y-3">
-          <label className="text-slate-300 text-sm font-semibold block">Noms des joueurs</label>
-          {Array.from({length:count}).map((_,i)=><input key={i} type="text" value={names[i]||''} onChange={e=>{const n=[...names];n[i]=e.target.value;setNames(n);}} placeholder={`Joueur ${i+1}`} className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>)}
+        <div style={{marginBottom:'26px'}}>
+          <div className="section-label">Noms des joueurs</div>
+          <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
+            {Array.from({length:count}).map((_,i)=>(
+              <input key={i} type="text" value={names[i]||''} onChange={e=>{const n=[...names];n[i]=e.target.value;setNames(n);}}
+                placeholder={`Joueur ${i+1}`} className="input-field"/>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onBack} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold">← Retour</button>
-          <button onClick={()=>onStart(names.slice(0,count).map((n,i)=>n.trim()||`Joueur ${i+1}`))} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold">🚀 Démarrer !</button>
+        <div style={{display:'flex',gap:'10px'}}>
+          <button onClick={onBack} className="btn" style={{flex:1}}>← Retour</button>
+          <button onClick={()=>onStart(names.slice(0,count).map((n,i)=>n.trim()||`Joueur ${i+1}`))} className="btn btn-primary" style={{flex:1}}>Démarrer !</button>
         </div>
       </div>
     </div>
@@ -492,103 +525,118 @@ function MasterScreen({gs,upd,onReset,onPlayer}) {
   const statChange = (pid,stat,delta) => upd(prev=>({...prev,players:prev.players.map(p=>p.id===pid?{...p,[stat]:Math.max(0,Math.min(100,p[stat]+delta))}:p)}));
 
   if (gs.gameOver) return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-6">
-      <div className="text-7xl mb-4">💀</div>
-      <h2 className="text-3xl font-bold text-red-400 mb-4">FIN DE PARTIE</h2>
-      <p className="text-xl mb-8">{gs.gameOverReason}</p>
-      <button onClick={onReset} className="bg-red-600 hover:bg-red-500 font-bold py-3 px-8 rounded-xl">Nouvelle Partie</button>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}>
+      <div className="paper" style={{maxWidth:'400px',width:'100%',borderRadius:'4px',padding:'48px 36px',textAlign:'center',boxShadow:'var(--shadow-page)',position:'relative'}}>
+        <div className="deco-stitches"/>
+        <div style={{fontFamily:'var(--font-pixel)',fontSize:'80px',lineHeight:1}}>✝</div>
+        <h2 style={{fontFamily:'var(--font-display)',fontSize:'28px',color:'var(--ink-red)',margin:'16px 0 12px',letterSpacing:'.04em'}}>Fin de Partie</h2>
+        <p style={{fontFamily:'var(--font-serif)',fontSize:'16px',marginBottom:'28px',color:'var(--ink-soft)'}}>{gs.gameOverReason}</p>
+        <button onClick={onReset} className="btn btn-red">Nouvelle Partie</button>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-3">
+    <div style={{minHeight:'100vh',background:'#2a2014',padding:'10px'}}>
+
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-3 bg-slate-800 rounded-xl p-3 flex-wrap gap-2">
-        <h1 className="text-lg font-bold text-blue-300">🎬 RÉGIE — Ascension & Mouflons</h1>
-        <div className="flex items-center gap-2 text-sm flex-wrap">
-          <span className="bg-blue-900 px-2 py-1 rounded-lg">Jour {gs.currentDay}/12</span>
-          <span className="bg-green-900 px-2 py-1 rounded-lg">{gs.currentAltitude}m</span>
-          <span className="bg-slate-700 px-2 py-1 rounded-lg">{ch?.weather}</span>
-          {gs.interChapterSummary && <span className="bg-yellow-700 px-2 py-1 rounded-lg animate-pulse">📋 Résumé affiché côté joueurs</span>}
-          <button onClick={onPlayer} className="bg-green-700 hover:bg-green-600 px-2 py-1 rounded-lg">👁️ Vue Joueurs</button>
-          <button onClick={onReset} className="bg-red-800 hover:bg-red-700 px-2 py-1 rounded-lg">🔄 Reset</button>
+      <div className="paper" style={{borderRadius:'3px',padding:'10px 16px',marginBottom:'10px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px',position:'relative',boxShadow:'var(--shadow-card)'}}>
+        <div style={{fontFamily:'var(--font-display)',fontSize:'15px',letterSpacing:'.05em',color:'var(--ink)'}}>Régie — Ascension &amp; Mouflons</div>
+        <div style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
+          <span className="badge-ink">Jour {gs.currentDay}/12</span>
+          <span className="badge-ink badge-green">{gs.currentAltitude}m</span>
+          <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-soft)'}}>{ch?.weather}</span>
+          {gs.interChapterSummary&&<span className="badge-ink badge-gold">📋 Résumé joueurs</span>}
+          <button onClick={onPlayer} className="btn btn-sm btn-green">Vue Joueurs</button>
+          <button onClick={onReset} className="btn btn-sm btn-red">Reset</button>
         </div>
       </div>
 
-      {gs.interChapterSummary && (
-        <div className="mb-3 bg-yellow-900/40 border border-yellow-600 rounded-xl p-3 flex items-center justify-between">
-          <span className="text-yellow-300 text-sm">📋 Les joueurs voient le résumé de journée. Cliquez "Continuer" quand ils sont prêts.</span>
-          <button onClick={()=>upd(p=>({...p,interChapterSummary:null}))} className="bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-1 rounded-lg font-bold text-sm">Continuer →</button>
+      {gs.interChapterSummary&&(
+        <div style={{marginBottom:'10px',background:'rgba(200,157,63,.12)',border:'1px solid var(--gold)',borderRadius:'3px',padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px',flexWrap:'wrap'}}>
+          <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--gold-deep)'}}>📋 Les joueurs voient le résumé. Cliquez Continuer quand ils sont prêts.</span>
+          <button onClick={()=>upd(p=>({...p,interChapterSummary:null}))} className="btn btn-sm btn-green">Continuer →</button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* LEFT COL */}
-        <div className="lg:col-span-2 space-y-3">
+      <div className="layout-master">
+        {/* LEFT + MIDDLE */}
+        <div className="main-cols" style={{gridColumn:'1/3',display:'flex',flexDirection:'column',gap:'10px'}}>
 
-          {/* NARRATION + NOTES */}
-          <div className="bg-slate-800 rounded-xl p-4">
-            <div className="flex items-start justify-between mb-3 gap-2">
-              <h2 className="text-base font-bold text-yellow-300">{ch?.title}</h2>
-              <button onClick={advance} disabled={!gs.choiceMade||gs.pendingItemGrants?.length>0||!!gs.pendingRefugeDecision} className={`shrink-0 px-3 py-2 rounded-lg font-bold text-sm ${gs.choiceMade&&!gs.pendingItemGrants?.length&&!gs.pendingRefugeDecision?'bg-blue-600 hover:bg-blue-500':'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>⏭️ Chapitre Suivant</button>
+          {/* NARRATION */}
+          <div className="card">
+            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'12px',gap:'8px'}}>
+              <div style={{fontFamily:'var(--font-display)',fontSize:'16px',letterSpacing:'.04em',color:'var(--ink)'}}>{ch?.title}</div>
+              <button onClick={advance}
+                disabled={!gs.choiceMade||gs.pendingItemGrants?.length>0||!!gs.pendingRefugeDecision}
+                className={`btn btn-sm${gs.choiceMade&&!gs.pendingItemGrants?.length&&!gs.pendingRefugeDecision?' btn-primary':''}`}
+                style={{flexShrink:0}}>
+                ⏭ Chapitre Suivant
+              </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="layout-2col" style={{gap:'14px'}}>
               <div>
-                <div className="text-xs font-bold text-purple-300 mb-1">📖 À LIRE AUX JOUEURS</div>
-                <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-line">{ch?.narrativeFull}</p>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',letterSpacing:'.12em',color:'var(--ink-blue)',marginBottom:'6px',textTransform:'uppercase'}}>À lire aux joueurs</div>
+                <p style={{fontFamily:'var(--font-serif)',fontSize:'14px',lineHeight:'1.65',whiteSpace:'pre-line',color:'var(--ink)'}}>{ch?.narrativeFull}</p>
               </div>
-              <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-600">
-                <div className="text-xs font-bold text-orange-300 mb-2">🎬 NOTES DU NARRATEUR</div>
-                <p className="text-slate-300 text-xs leading-relaxed">{ch?.gmNotes}</p>
+              <div style={{background:'rgba(43,29,18,.05)',border:'1px solid var(--paper-edge)',borderRadius:'2px',padding:'10px 12px'}}>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',letterSpacing:'.12em',color:'var(--energy)',marginBottom:'6px',textTransform:'uppercase'}}>Notes du Narrateur</div>
+                <p style={{fontFamily:'var(--font-type)',fontSize:'12px',lineHeight:'1.55',color:'var(--ink-soft)'}}>{ch?.gmNotes}</p>
               </div>
             </div>
           </div>
 
-          {/* D18 PANEL */}
+          {/* D18 */}
           <D18Panel chapter={ch} onApply={applyD18} appliedResult={gs.lastD18Result} />
 
           {/* D6 NOTE */}
-          <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700 flex items-start gap-3">
-            <span className="text-2xl shrink-0">🎲</span>
-            <div className="text-xs text-slate-400 leading-relaxed">
-              <span className="font-bold text-orange-300">D6 — Quand l'utiliser ?</span><br/>
-              <span className="text-slate-300">Ch.3 Refuge (D18 13–18)</span> : une fenêtre apparaît automatiquement avec le D6 intégré.<br/>
-              <span className="text-slate-300">Ch.4 Combat ours (Choix 4)</span> : le panneau combat apparaît via le bouton de choix.
+          <div className="card" style={{display:'flex',alignItems:'flex-start',gap:'10px',padding:'10px 14px'}}>
+            <span style={{fontFamily:'var(--font-pixel)',fontSize:'26px',lineHeight:1,flexShrink:0}}>⚄</span>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'11px',lineHeight:'1.65',color:'var(--ink-soft)'}}>
+              <span style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--energy)'}}>D6 — Quand l'utiliser ?</span><br/>
+              Ch.3 Refuge (D18 13–18) : fenêtre automatique avec D6 intégré.<br/>
+              Ch.4 Combat ours (Choix 4) : panneau combat via le bouton de choix.
             </div>
           </div>
 
           {/* CHOICES */}
-          <div className="bg-slate-800 rounded-xl p-4">
-            <h3 className="font-bold mb-3 text-green-300">🎯 Choix du Chapitre</h3>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="card">
+            <div className="section-label" style={{color:'var(--ink-green)'}}>Choix du Chapitre</div>
+            <div className="layout-2col">
               {ch?.choices.map(choice=>{
                 const avail=isChoiceAvail(choice,gs);
+                const done=gs.choiceMade;
                 return (
-                  <button key={choice.id} onClick={()=>avail&&!gs.choiceMade&&applyChoice(choice.id)} disabled={!avail||gs.choiceMade}
-                    className={`p-3 rounded-lg text-left border-2 transition-all ${gs.choiceMade?'border-slate-700 bg-slate-800 text-slate-500 cursor-not-allowed':avail?'border-green-600 bg-green-900/30 hover:bg-green-900/50 text-white':'border-slate-700 bg-slate-800/50 text-slate-500 cursor-not-allowed'}`}>
-                    <div className="font-bold text-sm">Choix {choice.id}</div>
-                    <div className="text-xs font-medium mt-1">{choice.label}</div>
-                    <div className="text-xs mt-1 opacity-70">{choice.description}</div>
-                    {!avail && <div className="text-xs text-red-400 mt-1">🔒 Nécessite : {choice.requiresResource&&getRes(choice.requiresResource)?.name}{choice.requiresFlag?' + carte consultée':''}</div>}
+                  <button key={choice.id}
+                    onClick={()=>avail&&!done&&applyChoice(choice.id)}
+                    disabled={!avail||done}
+                    style={{padding:'10px 12px',textAlign:'left',border:`2px solid ${done?'var(--paper-edge)':avail?'var(--ink-green)':'var(--paper-edge)'}`,background:done?'transparent':avail?'rgba(58,90,58,.08)':'transparent',borderRadius:'2px',cursor:avail&&!done?'pointer':'not-allowed',opacity:!avail||done?.7:1,transition:'border-color 120ms,background 120ms'}}>
+                    <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>Choix {choice.id}</div>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:avail&&!done?'var(--ink)':'var(--ink-faded)',marginBottom:'4px'}}>{choice.label}</div>
+                    <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)',lineHeight:'1.4'}}>{choice.description}</div>
+                    {!avail&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)',marginTop:'4px'}}>🔒 {choice.requiresResource&&getRes(choice.requiresResource)?.name}{choice.requiresFlag?' + carte consultée':''}</div>}
                   </button>
                 );
               })}
             </div>
-            {gs.choiceMade && <p className="text-green-400 text-xs mt-2 text-center">✅ "{gs.lastChoiceLabel}" — En attente de la distribution des objets pour avancer.</p>}
+            {gs.choiceMade&&<p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-green)',marginTop:'8px',textAlign:'center'}}>✓ "{gs.lastChoiceLabel}" — En attente distribution des objets.</p>}
           </div>
 
           {/* LOG */}
-          <div className="bg-slate-800 rounded-xl p-4">
-            <h3 className="font-bold mb-2 text-slate-400">📜 Journal de Session</h3>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {log.length===0?<p className="text-slate-600 text-sm italic">Aucun événement.</p>:log.map((l,i)=><div key={i} className="text-xs text-slate-300 bg-slate-700 rounded px-2 py-1">{l}</div>)}
+          <div className="card">
+            <div className="section-label" style={{color:'var(--ink-faded)'}}>Journal de Session</div>
+            <div style={{maxHeight:'120px',overflowY:'auto',display:'flex',flexDirection:'column',gap:'3px'}}>
+              {log.length===0
+                ?<p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',fontStyle:'italic'}}>Aucun événement.</p>
+                :log.map((l,i)=><div key={i} style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)',background:'rgba(43,29,18,.04)',padding:'3px 8px',borderLeft:'2px solid var(--paper-edge)'}}>{l}</div>)
+              }
             </div>
           </div>
         </div>
 
         {/* RIGHT: PLAYERS */}
-        <div className="space-y-3">
-          <h3 className="font-bold text-slate-300 text-center">👥 Joueurs</h3>
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          <div className="section-label" style={{justifyContent:'center'}}>Joueurs</div>
           {gs.players.map(p=>(
             <MasterPlayerCard key={p.id} player={p} onEdit={()=>setShowInvModal(p.id)} onStat={(s,d)=>statChange(p.id,s,d)} />
           ))}
@@ -596,73 +644,70 @@ function MasterScreen({gs,upd,onReset,onPlayer}) {
       </div>
 
       {/* ITEM GRANT MODAL */}
-      {gs.pendingItemGrants?.length>0 && !gs.pendingRefugeDecision && (
-        <ItemGrantModal grant={gs.pendingItemGrants[0]} players={gs.players} onGrant={grantItem} remaining={gs.pendingItemGrants.length} />
+      {gs.pendingItemGrants?.length>0&&!gs.pendingRefugeDecision&&(
+        <ItemGrantModal grant={gs.pendingItemGrants[0]} players={gs.players} onGrant={grantItem} remaining={gs.pendingItemGrants.length}/>
       )}
 
       {/* REFUGE MODAL */}
-      {gs.pendingRefugeDecision && (
+      {gs.pendingRefugeDecision&&(
         <RefugeModal
           decision={gs.pendingRefugeDecision}
           players={gs.players}
-          onDecide={(playerId) => {
-            if (playerId === null) {
-              addLog('Refuge : personne n\'entre.');
-              upd(prev => ({...prev, pendingRefugeDecision:null}));
-            } else {
-              upd(prev => ({...prev, pendingRefugeDecision:{phase:'roll', selectedPlayerId:playerId}}));
-            }
+          onDecide={(playerId)=>{
+            if(playerId===null){addLog("Refuge : personne n'entre.");upd(prev=>({...prev,pendingRefugeDecision:null}));}
+            else upd(prev=>({...prev,pendingRefugeDecision:{phase:'roll',selectedPlayerId:playerId}}));
           }}
-          onApplyD6={(playerId, roll) => {
-            upd(prev => {
-              const players = prev.players.map(p=>({...p,inventory:[...p.inventory]}));
-              const grants = [...(prev.pendingItemGrants||[])];
-              if (roll<=2) {
-                const target = players.find(p=>p.id===playerId);
-                if (target) { target.energy=Math.max(0,target.energy-10); target.isKO=target.energy<=0; }
-              } else if (roll<=4) {
-                grants.push({resourceId:'corde',source:'Refuge secret (Ch.3)'});
-              } else {
-                grants.push({resourceId:'corde',source:'Refuge secret (Ch.3)'});
-                grants.push({resourceId:'chaufferette',source:'Refuge secret (Ch.3)'});
-              }
-              return {...prev, players, pendingItemGrants:grants, pendingRefugeDecision:null};
+          onApplyD6={(playerId,roll)=>{
+            upd(prev=>{
+              const players=prev.players.map(p=>({...p,inventory:[...p.inventory]}));
+              const grants=[...(prev.pendingItemGrants||[])];
+              if(roll<=2){const t=players.find(p=>p.id===playerId);if(t){t.energy=Math.max(0,t.energy-10);t.isKO=t.energy<=0;}}
+              else if(roll<=4)grants.push({resourceId:'corde',source:'Refuge secret (Ch.3)'});
+              else{grants.push({resourceId:'corde',source:'Refuge secret (Ch.3)'});grants.push({resourceId:'chaufferette',source:'Refuge secret (Ch.3)'});}
+              return{...prev,players,pendingItemGrants:grants,pendingRefugeDecision:null};
             });
-            const playerName = gs.players.find(p=>p.id===playerId)?.name;
-            addLog(`Refuge D6=${roll} — ${roll<=2?`-10 Énergie → ${playerName}`:roll<=4?`+Corde → à distribuer`:'+Corde +Chaufferette → à distribuer'}`);
+            const pName=gs.players.find(p=>p.id===playerId)?.name;
+            addLog(`Refuge D6=${roll} — ${roll<=2?`-10 Énergie → ${pName}`:roll<=4?'+Corde → à distribuer':'+Corde +Chaufferette → à distribuer'}`);
           }}
         />
       )}
 
       {/* BEAR FIGHT MODAL */}
-      {showBear && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold text-orange-300 mb-2">🐻 Combat contre l'Ours !</h3>
-            <p className="text-slate-400 text-sm mb-4">Si score joueur ≥ ours → pas de dégâts. Si score joueur &lt; ours → -5 Énergie.</p>
-            <div className="mb-4">
-              <label className="text-slate-300 text-sm block mb-1 font-bold">Score de l'Ours (D6)</label>
-              <input type="number" min="1" max="6" value={bearOurs} onChange={e=>setBearOurs(e.target.value)} className="bg-slate-700 text-white rounded px-3 py-2 w-24 text-center text-2xl font-bold"/>
-            </div>
-            <div className="mb-4 space-y-2">
-              {gs.players.filter(p=>!p.isKO).map(p=>(
-                <div key={p.id} className="flex items-center gap-3">
-                  <span className="text-slate-300 text-sm w-24 font-medium">{p.name}</span>
-                  <input type="number" min="1" max="6" value={bearScores[p.id]||''} onChange={e=>setBearScores(prev=>({...prev,[p.id]:e.target.value}))} className="bg-slate-700 text-white rounded px-3 py-2 w-20 text-center" placeholder="D6"/>
-                  {bearScores[p.id] && bearOurs && <span className={`text-xs font-bold ${parseInt(bearScores[p.id])>=parseInt(bearOurs)?'text-green-400':'text-red-400'}`}>{parseInt(bearScores[p.id])>=parseInt(bearOurs)?'✅ OK':'⚡ -5'}</span>}
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button onClick={()=>setShowBear(false)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Annuler</button>
-              <button onClick={applyBear} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white py-2 rounded-lg font-bold">Appliquer !</button>
+      {showBear&&(
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <div className="paper" style={{borderRadius:'4px',padding:'28px 24px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+              <div className="deco-stitches"/>
+              <div className="section-label" style={{color:'var(--energy)'}}>🐻 Combat contre l'Ours !</div>
+              <p style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-soft)',marginBottom:'16px'}}>Score joueur ≥ ours → pas de dégâts. Score joueur &lt; ours → -5 Énergie.</p>
+              <div style={{marginBottom:'14px'}}>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',marginBottom:'6px',textTransform:'uppercase',letterSpacing:'.1em',color:'var(--ink-faded)'}}>Score de l'Ours (D6)</div>
+                <input type="number" min="1" max="6" value={bearOurs} onChange={e=>setBearOurs(e.target.value)} className="die-input"/>
+              </div>
+              <div style={{marginBottom:'16px',display:'flex',flexDirection:'column',gap:'8px'}}>
+                {gs.players.filter(p=>!p.isKO).map(p=>(
+                  <div key={p.id} style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                    <span style={{fontFamily:'var(--font-serif)',fontSize:'14px',minWidth:'80px',color:'var(--ink)'}}>{p.name}</span>
+                    <input type="number" min="1" max="6" value={bearScores[p.id]||''} onChange={e=>setBearScores(prev=>({...prev,[p.id]:e.target.value}))} className="die-input" style={{width:'64px'}} placeholder="D6"/>
+                    {bearScores[p.id]&&bearOurs&&(
+                      <span style={{fontFamily:'var(--font-type)',fontSize:'12px',fontWeight:'bold',color:parseInt(bearScores[p.id])>=parseInt(bearOurs)?'var(--ink-green)':'var(--ink-red)'}}>
+                        {parseInt(bearScores[p.id])>=parseInt(bearOurs)?'✓ OK':'⚡ -5'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'flex',gap:'10px'}}>
+                <button onClick={()=>setShowBear(false)} className="btn" style={{flex:1}}>Annuler</button>
+                <button onClick={applyBear} className="btn btn-primary" style={{flex:1}}>Appliquer !</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* INVENTORY MODAL */}
-      {showInvModal!==null && (
+      {showInvModal!==null&&(
         <InventoryModal
           player={gs.players.find(p=>p.id===showInvModal)}
           onClose={()=>setShowInvModal(null)}
@@ -677,80 +722,72 @@ function MasterScreen({gs,upd,onReset,onPlayer}) {
 function RefugeModal({decision, players, onDecide, onApplyD6}) {
   const [d6Input, setD6Input] = useState('');
   const selectedPlayer = players.find(p=>p.id===decision.selectedPlayerId);
-
   const outcomes = [
-    { range:'1–2', icon:'💥', title:'Passage trop serré', desc:`-10 Énergie pour ${selectedPlayer?.name||'le joueur'}. Sortie en catastrophe.`, color:'border-red-600 bg-red-900/30' },
-    { range:'3–4', icon:'🪢', title:'Une Trouvaille !',   desc:'1 Corde récupérée accrochée dans le refuge.', color:'border-yellow-500 bg-yellow-900/20' },
-    { range:'5–6', icon:'✨', title:'Jackpot !',           desc:'1 Corde ET 1 Chaufferette récupérées au fond du refuge.', color:'border-green-600 bg-green-900/30' },
+    {range:'1–2',icon:'💥',title:'Passage trop serré',desc:`-10 Énergie pour ${selectedPlayer?.name||'le joueur'}.`,borderColor:'var(--ink-red)',activeBg:'rgba(168,48,42,.08)'},
+    {range:'3–4',icon:'🪢',title:'Une Trouvaille !',  desc:'1 Corde récupérée dans le refuge.',               borderColor:'var(--gold)',       activeBg:'rgba(200,157,63,.08)'},
+    {range:'5–6',icon:'✨',title:'Jackpot !',          desc:'1 Corde ET 1 Chaufferette.',                       borderColor:'var(--ink-green)',  activeBg:'rgba(58,90,58,.08)'},
   ];
-
   const activeIdx = d6Input ? parseInt(d6Input)<=2?0:parseInt(d6Input)<=4?1:2 : -1;
 
   return (
-    <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl border-2 border-emerald-600/50">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="text-4xl">🪨</div>
-          <div>
-            <h3 className="text-xl font-bold text-emerald-300">Le Refuge Secret</h3>
-            <p className="text-slate-400 text-xs">Chapitre 3 — D18 résultat 13–18</p>
-          </div>
-        </div>
-
-        {decision.phase === 'decide' && (<>
-          <p className="text-slate-200 text-sm mb-1">Un passage étroit mène à un refuge. <span className="text-emerald-300 font-semibold">Qui veut tenter de se faufiler ?</span></p>
-          <p className="text-slate-500 text-xs mb-4 italic">Risqué mais potentiellement très utile. Un seul joueur peut y aller.</p>
-          <div className="space-y-2 mb-4">
-            {players.filter(p=>!p.isKO).map(p=>(
-              <button key={p.id} onClick={()=>onDecide(p.id)}
-                className="w-full p-3 rounded-xl text-left flex items-center justify-between border border-slate-600 bg-slate-700 hover:bg-emerald-900/40 hover:border-emerald-500 text-white transition-all">
-                <div>
-                  <span className="font-bold">{p.name}</span>
-                  <span className="text-slate-400 text-sm ml-3">⚡ {p.energy} • 💙 {p.moral}</span>
-                </div>
-                <span className="text-emerald-400 font-bold text-sm">Je tente ! →</span>
-              </button>
-            ))}
-          </div>
-          <button onClick={()=>onDecide(null)} className="w-full p-3 rounded-xl border border-slate-700 bg-slate-700/40 hover:bg-slate-700 text-slate-400 transition-colors text-sm">
-            🚶 Personne n'entre — on continue sans
-          </button>
-        </>)}
-
-        {decision.phase === 'roll' && (<>
-          <div className="bg-emerald-900/30 border border-emerald-600/50 rounded-xl p-3 mb-4 flex items-center gap-2">
-            <span className="text-2xl">🧗</span>
+    <div className="modal-overlay">
+      <div className="modal-box">
+        <div className="paper" style={{borderRadius:'4px',padding:'28px 24px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+          <div className="deco-stitches"/>
+          <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'18px'}}>
+            <span style={{fontFamily:'var(--font-pixel)',fontSize:'40px',lineHeight:1}}>🪨</span>
             <div>
-              <p className="text-emerald-300 font-bold">{selectedPlayer?.name} se faufile dans le passage...</p>
-              <p className="text-slate-400 text-xs">Lancez le D6 pour déterminer ce qui se passe.</p>
+              <div style={{fontFamily:'var(--font-display)',fontSize:'18px',letterSpacing:'.04em',color:'var(--ink-green)'}}>Le Refuge Secret</div>
+              <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>Chapitre 3 — D18 résultat 13–18</div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-5">
-            {outcomes.map((o,i)=>(
-              <div key={i} className={`rounded-xl p-3 border-2 transition-all ${activeIdx===i?o.color+' ring-2 ring-white/30 scale-105':o.color+' opacity-60'}`}>
-                <div className="text-xs font-bold text-slate-400 mb-1">{o.range}</div>
-                <div className="text-2xl mb-1">{o.icon}</div>
-                <div className="text-xs font-bold text-white mb-1">{o.title}</div>
-                <div className="text-xs text-slate-300 leading-relaxed">{o.desc}</div>
+          {decision.phase==='decide'&&(<>
+            <p style={{fontFamily:'var(--font-serif)',fontSize:'14px',marginBottom:'4px',color:'var(--ink)'}}>Un passage étroit mène à un refuge. <strong>Qui veut tenter de se faufiler ?</strong></p>
+            <p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',marginBottom:'14px',fontStyle:'italic'}}>Risqué mais potentiellement très utile. Un seul joueur peut y aller.</p>
+            <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'12px'}}>
+              {players.filter(p=>!p.isKO).map(p=>(
+                <button key={p.id} onClick={()=>onDecide(p.id)} className="btn"
+                  style={{textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center',borderColor:'var(--ink-green)'}}>
+                  <span style={{fontFamily:'var(--font-serif)',fontSize:'15px',color:'var(--ink)'}}>{p.name}</span>
+                  <span style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>⚡{p.energy} · 💙{p.moral}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>onDecide(null)} className="btn" style={{width:'100%',color:'var(--ink-faded)'}}>🚶 Personne n'entre — on continue</button>
+          </>)}
+
+          {decision.phase==='roll'&&(<>
+            <div style={{background:'rgba(58,90,58,.08)',border:'1px solid var(--ink-green)',borderRadius:'2px',padding:'10px 12px',marginBottom:'14px',display:'flex',gap:'10px',alignItems:'center'}}>
+              <span style={{fontFamily:'var(--font-pixel)',fontSize:'28px',lineHeight:1}}>🧗</span>
+              <div>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:'var(--ink-green)'}}>{selectedPlayer?.name} se faufile...</div>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)'}}>Lancez le D6.</div>
               </div>
-            ))}
-          </div>
-
-          <div className="flex gap-3 items-center">
-            <div>
-              <label className="text-slate-400 text-xs block mb-1">Résultat D6</label>
-              <input type="number" min="1" max="6" value={d6Input} onChange={e=>setD6Input(e.target.value)}
-                className="bg-slate-700 text-white rounded-lg px-3 py-2 w-20 text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="1–6"/>
             </div>
-            <button
-              onClick={()=>{const r=parseInt(d6Input);if(r>=1&&r<=6)onApplyD6(decision.selectedPlayerId,r);}}
-              disabled={!d6Input||parseInt(d6Input)<1||parseInt(d6Input)>6}
-              className={`flex-1 py-3 rounded-xl font-bold text-base transition-colors ${d6Input&&parseInt(d6Input)>=1&&parseInt(d6Input)<=6?'bg-emerald-600 hover:bg-emerald-500 text-white':'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>
-              Appliquer le résultat
-            </button>
-          </div>
-        </>)}
+            <div className="layout-3col" style={{marginBottom:'16px'}}>
+              {outcomes.map((o,i)=>(
+                <div key={i} style={{border:`2px solid ${o.borderColor}`,borderRadius:'2px',padding:'10px 8px',opacity:activeIdx===-1||activeIdx===i?1:.45,transform:activeIdx===i?'scale(1.04)':'none',transition:'all 150ms',background:activeIdx===i?o.activeBg:'transparent'}}>
+                  <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>{o.range}</div>
+                  <div style={{fontFamily:'var(--font-pixel)',fontSize:'24px',lineHeight:1,marginBottom:'3px'}}>{o.icon}</div>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'11px',color:'var(--ink)',marginBottom:'3px'}}>{o.title}</div>
+                  <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-soft)',lineHeight:'1.4'}}>{o.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:'10px',alignItems:'flex-end'}}>
+              <div>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'.1em'}}>Résultat D6</div>
+                <input type="number" min="1" max="6" value={d6Input} onChange={e=>setD6Input(e.target.value)} className="die-input" placeholder="1–6"/>
+              </div>
+              <button onClick={()=>{const r=parseInt(d6Input);if(r>=1&&r<=6)onApplyD6(decision.selectedPlayerId,r);}}
+                disabled={!d6Input||parseInt(d6Input)<1||parseInt(d6Input)>6}
+                className="btn btn-primary" style={{flex:1,alignSelf:'flex-end'}}>
+                Appliquer
+              </button>
+            </div>
+          </>)}
+        </div>
       </div>
     </div>
   );
@@ -763,25 +800,25 @@ function D18Panel({chapter,onApply,appliedResult}) {
   const activeIdx = appliedResult===null?-1:appliedResult<=6?0:appliedResult<=12?1:2;
 
   return (
-    <div className="bg-slate-800 rounded-xl p-4">
-      <h3 className="font-bold mb-3 text-purple-300">🎲 D18 — Événements possibles (lisez avant de lancer)</h3>
-      <div className="grid grid-cols-3 gap-2 mb-4">
+    <div className="card">
+      <div className="section-label" style={{color:'var(--ink-blue)'}}>D18 — Événements possibles (lisez avant de lancer)</div>
+      <div className="layout-3col" style={{marginBottom:'12px'}}>
         {events.map((evt,i)=>(
-          <div key={i} className={`rounded-xl p-3 border-2 transition-all ${activeIdx===i?'border-purple-400 bg-purple-900/50 shadow-lg shadow-purple-900/50':activeIdx===-1?'border-slate-600 bg-slate-700/40 hover:border-slate-500':'border-slate-700 bg-slate-800/50 opacity-60'}`}>
-            <div className="text-xs font-bold text-slate-400 mb-1">{evt.range}</div>
-            <div className={`text-sm font-bold mb-2 ${activeIdx===i?'text-purple-200':'text-white'}`}>{evt.title}</div>
-            <div className="text-xs text-slate-300 italic leading-relaxed mb-3 whitespace-pre-line">{evt.story}</div>
-            <div className={`text-xs font-medium p-2 rounded-lg ${activeIdx===i?'bg-purple-900/60 text-purple-100':'bg-slate-800/60 text-slate-400'}`}>{evt.effectDesc}</div>
+          <div key={i} style={{border:`2px solid ${activeIdx===i?'var(--ink-blue)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'10px',opacity:activeIdx===-1||activeIdx===i?1:.5,transition:'all 150ms',background:activeIdx===i?'rgba(42,74,110,.08)':'transparent'}}>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'4px'}}>{evt.range}</div>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--ink)',marginBottom:'6px'}}>{evt.title}</div>
+            <div style={{fontFamily:'var(--font-serif)',fontSize:'12px',color:'var(--ink-soft)',fontStyle:'italic',lineHeight:'1.5',marginBottom:'8px',whiteSpace:'pre-line'}}>{evt.story}</div>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:activeIdx===i?'var(--ink-blue)':'var(--ink-faded)',background:'rgba(43,29,18,.04)',padding:'5px 7px',borderRadius:'2px',lineHeight:'1.4'}}>{evt.effectDesc}</div>
           </div>
         ))}
       </div>
-      <div className="flex gap-2 items-center flex-wrap">
-        <input type="number" min="1" max="18" value={input} onChange={e=>setInput(e.target.value)} className="bg-slate-700 text-white rounded px-3 py-2 w-24 text-center text-xl font-bold" placeholder="1–18"/>
-        <button onClick={()=>{const r=parseInt(input);if(r>=1&&r<=18)onApply(r);}} className="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-lg font-bold">Appliquer D18</button>
-        {appliedResult && (
-          <div className="flex items-center gap-2 bg-purple-900/40 px-3 py-2 rounded-lg">
-            <span className="text-2xl font-bold text-yellow-300">{appliedResult}</span>
-            <span className="text-sm text-purple-200">→ {events[activeIdx]?.title}</span>
+      <div style={{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}}>
+        <input type="number" min="1" max="18" value={input} onChange={e=>setInput(e.target.value)} className="die-input" placeholder="1–18" style={{width:'90px'}}/>
+        <button onClick={()=>{const r=parseInt(input);if(r>=1&&r<=18)onApply(r);}} className="btn btn-primary btn-sm">Appliquer D18</button>
+        {appliedResult&&(
+          <div style={{display:'flex',alignItems:'center',gap:'6px',background:'rgba(42,74,110,.1)',padding:'4px 10px',borderRadius:'2px',border:'1px solid var(--ink-blue)'}}>
+            <span style={{fontFamily:'var(--font-pixel)',fontSize:'26px',color:'var(--gold)'}}>{appliedResult}</span>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-blue)'}}>{events[activeIdx]?.title}</span>
           </div>
         )}
       </div>
@@ -793,39 +830,42 @@ function D18Panel({chapter,onApply,appliedResult}) {
 function ItemGrantModal({grant,players,onGrant,remaining}) {
   const res = getRes(grant.resourceId);
   return (
-    <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border-2 border-yellow-500/50">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xl font-bold text-yellow-300">🎁 Attribution d'Objet</h3>
-          {remaining>1 && <span className="text-xs bg-yellow-800 text-yellow-300 px-2 py-1 rounded-full">{remaining} objets à distribuer</span>}
-        </div>
-        <div className="flex items-center gap-4 bg-slate-700 rounded-xl p-4 mb-4">
-          <div className="text-5xl">{res?.icon}</div>
-          <div>
-            <div className="text-xl font-bold text-white">{res?.name}</div>
-            <div className="text-slate-400 text-sm">Source : {grant.source}</div>
-            <div className="text-slate-400 text-xs mt-1">Occupe 1 emplacement d'inventaire</div>
+    <div className="modal-overlay">
+      <div className="modal-box">
+        <div className="paper" style={{borderRadius:'4px',padding:'28px 24px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+          <div className="deco-stitches"/>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'18px',letterSpacing:'.04em',color:'var(--gold-deep)'}}>Attribution d'Objet</div>
+            {remaining>1&&<span className="badge-ink badge-gold">{remaining} objets</span>}
           </div>
-        </div>
-        <p className="text-slate-300 text-sm mb-3 font-semibold">Qui reçoit cet objet ?</p>
-        <div className="space-y-2">
-          {players.filter(p=>!p.isKO).map(p=>{
-            const slots=getUsedSlots(p.inventory);
-            const full=slots>=MAX_SLOTS;
-            return (
-              <button key={p.id} onClick={()=>!full&&onGrant(p.id)} disabled={full}
-                className={`w-full p-3 rounded-xl text-left flex items-center justify-between transition-colors border ${full?'border-slate-700 bg-slate-800 text-slate-500 cursor-not-allowed':'border-slate-600 bg-slate-700 hover:bg-slate-600 hover:border-yellow-500 text-white'}`}>
-                <div>
-                  <span className="font-bold text-base">{p.name}</span>
-                  <div className="text-xs text-slate-400 mt-0.5">⚡ {p.energy} • 💙 {p.moral}</div>
-                </div>
-                <div className="text-right">
-                  <div className={`text-xs font-bold ${full?'text-red-400':'text-green-400'}`}>{slots}/{MAX_SLOTS}</div>
-                  <div className="text-xs text-slate-500">{full?'Inventaire plein':'emplacement libre'}</div>
-                </div>
-              </button>
-            );
-          })}
+          <div style={{display:'flex',alignItems:'center',gap:'16px',background:'rgba(200,157,63,.1)',border:'1px solid var(--paper-stain)',borderRadius:'2px',padding:'12px 16px',marginBottom:'16px'}}>
+            <div style={{fontFamily:'var(--font-pixel)',fontSize:'48px',lineHeight:1}}>{res?.icon}</div>
+            <div>
+              <div style={{fontFamily:'var(--font-display)',fontSize:'18px',color:'var(--ink)'}}>{res?.name}</div>
+              <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',marginTop:'3px'}}>Source : {grant.source}</div>
+              <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>Occupe 1 emplacement d'inventaire</div>
+            </div>
+          </div>
+          <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)',marginBottom:'10px',textTransform:'uppercase',letterSpacing:'.1em'}}>Qui reçoit cet objet ?</div>
+          <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+            {players.filter(p=>!p.isKO).map(p=>{
+              const slots=getUsedSlots(p.inventory);
+              const full=slots>=MAX_SLOTS;
+              return (
+                <button key={p.id} onClick={()=>!full&&onGrant(p.id)} disabled={full}
+                  className="btn" style={{textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center',opacity:full?.5:1,borderColor:full?'var(--paper-edge)':undefined}}>
+                  <div>
+                    <div style={{fontFamily:'var(--font-serif)',fontSize:'15px',color:'var(--ink)'}}>{p.name}</div>
+                    <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>⚡{p.energy} · 💙{p.moral}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontFamily:'var(--font-pixel)',fontSize:'16px',color:full?'var(--ink-red)':'var(--ink-green)'}}>{slots}/{MAX_SLOTS}</div>
+                    <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>{full?'plein':'libre'}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -834,26 +874,32 @@ function ItemGrantModal({grant,players,onGrant,remaining}) {
 
 // ─── MASTER PLAYER CARD ─────────────────────────────────
 function MasterPlayerCard({player,onEdit,onStat}) {
-  const eC=player.energy>60?'bg-green-500':player.energy>30?'bg-yellow-500':'bg-red-500';
-  const mC=player.moral>60?'bg-blue-500':player.moral>30?'bg-purple-500':'bg-red-500';
   return (
-    <div className={`bg-slate-800 rounded-xl p-3 ${player.isKO?'opacity-50':''}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-bold text-sm">{player.isKO?'💀':'🧑'} {player.name}</div>
-        <button onClick={onEdit} className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded">✏️ Inv.</button>
+    <div className={`card${player.isKO?' player-ko':''}`} style={{padding:'10px 12px',borderColor:player.isKO?'var(--ink-red)':undefined}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+        <div style={{fontFamily:'var(--font-serif)',fontSize:'14px',fontWeight:600,color:player.isKO?'var(--ink-red)':'var(--ink)'}}>
+          {player.isKO?'✝ ':''}  {player.name}
+        </div>
+        <button onClick={onEdit} className="btn btn-sm" style={{padding:'2px 8px',fontSize:'9px'}}>✎ Inv.</button>
       </div>
-      {[['energy','Énergie',eC],['moral','Moral',mC]].map(([k,l,c])=>(
-        <div key={k} className="flex items-center gap-1 mb-1">
-          <span className="text-xs text-slate-400 w-12">{l}</span>
-          <div className="flex-1 bg-slate-700 rounded-full h-2.5"><div className={`${c} h-2.5 rounded-full`} style={{width:`${player[k]}%`}}/></div>
-          <button onClick={()=>onStat(k,-5)} className="text-xs bg-red-900 hover:bg-red-800 px-1 rounded">-5</button>
-          <span className="text-xs w-7 text-center font-bold">{player[k]}</span>
-          <button onClick={()=>onStat(k,5)} className="text-xs bg-green-900 hover:bg-green-800 px-1 rounded">+5</button>
+      {[['energy','Énergie'],['moral','Moral']].map(([k,l])=>(
+        <div key={k} style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'6px'}}>
+          <span style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',width:'44px'}}>{l}</span>
+          <div className={`bar ${k}`} style={{flex:1}}><span style={{width:`${player[k]}%`}}/></div>
+          <button onClick={()=>onStat(k,-5)} className="btn btn-sm btn-red" style={{padding:'1px 5px',fontSize:'9px',boxShadow:'1px 1px 0 var(--ink-red)'}}>-5</button>
+          <span style={{fontFamily:'var(--font-pixel)',fontSize:'16px',width:'28px',textAlign:'center',color:'var(--ink)'}}>{player[k]}</span>
+          <button onClick={()=>onStat(k,5)} className="btn btn-sm btn-green" style={{padding:'1px 5px',fontSize:'9px',boxShadow:'1px 1px 0 var(--ink-green)'}}>+5</button>
         </div>
       ))}
-      <div className="flex flex-wrap gap-1 mt-2">
-        {player.inventory.map((item,idx)=>{const r=getRes(item.resourceId);return(<span key={idx} className={`text-xs px-1 py-0.5 rounded ${item.wet?'bg-slate-700 text-slate-500':'bg-slate-600 text-white'}`}>{r?.icon}{r?.name?.split(' ')[0]}{item.portions!=null?`×${item.portions}`:''}{item.wet?'💦':''}</span>);})}
-        {player.bonusMoral&&<span className="text-xs px-1 py-0.5 rounded bg-yellow-900 text-yellow-300">🙏</span>}
+      <div style={{display:'flex',flexWrap:'wrap',gap:'4px',marginTop:'4px'}}>
+        {player.inventory.map((item,idx)=>{const r=getRes(item.resourceId);return(
+          <span key={idx} className={`inv-slot${item.wet?' wet':' filled'}`}
+            style={{minHeight:'auto',padding:'2px 6px',flexDirection:'row',fontSize:'10px',minWidth:'auto',gap:'2px'}}>
+            {r?.icon} {r?.name?.split(' ')[0]}{item.portions!=null?`×${item.portions}`:''}
+          </span>
+        );})}
+        {player.bonusMoral&&<span className="inv-slot filled"
+          style={{minHeight:'auto',padding:'2px 6px',flexDirection:'row',fontSize:'10px',minWidth:'auto',borderColor:'var(--gold)',background:'rgba(200,157,63,.15)',gap:'2px'}}>🙏</span>}
       </div>
     </div>
   );
@@ -864,30 +910,35 @@ function InventoryModal({player,onClose,onUpdate}) {
   const [inv,setInv] = useState([...player.inventory]);
   const [addId,setAddId] = useState('sandwich');
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-bold mb-1">📦 {player.name} — Inventaire</h3>
-        <p className="text-slate-400 text-xs mb-3">{getUsedSlots(inv)}/{MAX_SLOTS} emplacements utilisés</p>
-        <div className="space-y-2 mb-4 max-h-52 overflow-y-auto">
-          {inv.map((item,idx)=>{const r=getRes(item.resourceId);return(
-            <div key={idx} className="flex items-center gap-2 bg-slate-700 rounded-lg p-2">
-              <span className="text-xl">{r?.icon}</span>
-              <span className="flex-1 text-sm">{r?.name}{item.portions!=null?` (${item.portions} portions)`:''}</span>
-              <button onClick={()=>setInv(p=>p.map((it,i)=>i===idx?{...it,wet:!it.wet}:it))} className={`text-xs px-2 py-1 rounded ${item.wet?'bg-blue-800 text-blue-200':'bg-slate-600'}`}>💧</button>
-              <button onClick={()=>setInv(p=>p.filter((_,i)=>i!==idx))} className="text-xs bg-red-800 hover:bg-red-700 px-2 py-1 rounded">✕</button>
-            </div>
-          );})}
-          {inv.length===0&&<p className="text-slate-500 text-sm italic text-center">Inventaire vide</p>}
-        </div>
-        <div className="flex gap-2 mb-4">
-          <select value={addId} onChange={e=>setAddId(e.target.value)} className="flex-1 bg-slate-700 text-white rounded-lg px-3 py-2">
-            {Object.values(RESOURCES).map(r=><option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
-          </select>
-          <button onClick={()=>{const r=getRes(addId);if(r)setInv(p=>[...p,{resourceId:r.id,portions:r.hasPortions?3:null,wet:false}]);}} className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg font-bold">+ Ajouter</button>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">Annuler</button>
-          <button onClick={()=>onUpdate(inv)} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold">Sauvegarder</button>
+    <div className="modal-overlay">
+      <div className="modal-box">
+        <div className="paper" style={{borderRadius:'4px',padding:'28px 24px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+          <div className="deco-stitches"/>
+          <div style={{fontFamily:'var(--font-display)',fontSize:'18px',marginBottom:'4px',color:'var(--ink)'}}>{player.name} — Inventaire</div>
+          <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'14px'}}>{getUsedSlots(inv)}/{MAX_SLOTS} emplacements utilisés</div>
+          <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'14px',maxHeight:'200px',overflowY:'auto'}}>
+            {inv.map((item,idx)=>{const r=getRes(item.resourceId);return(
+              <div key={idx} style={{display:'flex',alignItems:'center',gap:'8px',background:'rgba(43,29,18,.05)',border:'1px solid var(--paper-edge)',borderRadius:'2px',padding:'6px 10px'}}>
+                <span style={{fontFamily:'var(--font-pixel)',fontSize:'20px'}}>{r?.icon}</span>
+                <span style={{flex:1,fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink)'}}>{r?.name}{item.portions!=null?` (${item.portions} portions)`:''}</span>
+                <button onClick={()=>setInv(p=>p.map((it,i)=>i===idx?{...it,wet:!it.wet}:it))} className="btn btn-sm"
+                  style={{fontSize:'11px',padding:'2px 6px',borderColor:item.wet?'var(--ink-blue)':undefined,color:item.wet?'var(--ink-blue)':undefined}}>💧</button>
+                <button onClick={()=>setInv(p=>p.filter((_,i)=>i!==idx))} className="btn btn-sm btn-red" style={{fontSize:'11px',padding:'2px 6px'}}>✕</button>
+              </div>
+            );})}
+            {inv.length===0&&<p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',fontStyle:'italic',textAlign:'center',padding:'12px 0'}}>Inventaire vide</p>}
+          </div>
+          <div style={{display:'flex',gap:'8px',marginBottom:'14px'}}>
+            <select value={addId} onChange={e=>setAddId(e.target.value)}
+              style={{flex:1,fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink)',background:'var(--paper-light)',border:'1px solid var(--paper-edge)',borderRadius:'2px',padding:'6px 8px',outline:'none'}}>
+              {Object.values(RESOURCES).map(r=><option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
+            </select>
+            <button onClick={()=>{const r=getRes(addId);if(r)setInv(p=>[...p,{resourceId:r.id,portions:r.hasPortions?3:null,wet:false}]);}} className="btn btn-green btn-sm">+ Ajouter</button>
+          </div>
+          <div style={{display:'flex',gap:'10px'}}>
+            <button onClick={onClose} className="btn" style={{flex:1}}>Annuler</button>
+            <button onClick={()=>onUpdate(inv)} className="btn btn-primary" style={{flex:1}}>Sauvegarder</button>
+          </div>
         </div>
       </div>
     </div>
@@ -899,76 +950,81 @@ function InventoryModal({player,onClose,onUpdate}) {
 // ═══════════════════════════════════════════════════════
 function PlayerScreen({gs,onBack}) {
   const ch = CHAPTERS[gs.currentChapter];
-
-  // Between-chapter summary takes priority
   if (gs.interChapterSummary) return <BetweenChapters summary={gs.interChapterSummary} chapter={ch} players={gs.players} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white">
-      <div className="bg-slate-900/90 sticky top-0 z-10 px-4 py-3 border-b border-slate-700/50">
-        <div className="flex items-center justify-between max-w-6xl mx-auto flex-wrap gap-2">
+    <div style={{minHeight:'100vh',background:'#2a2014'}}>
+      {/* STICKY HEADER */}
+      <div className="paper" style={{position:'sticky',top:0,zIndex:10,padding:'10px 16px',boxShadow:'var(--shadow-card)',borderBottom:'2px solid var(--paper-edge)'}}>
+        <div style={{maxWidth:'960px',margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
           <div>
-            <h1 className="text-lg font-bold text-blue-300">🦌 Ascension & Mouflons</h1>
-            <p className="text-slate-500 text-xs">{ch?.title}</p>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'16px',letterSpacing:'.04em',color:'var(--ink)'}}>Ascension &amp; Mouflons</div>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)'}}>{ch?.title}</div>
           </div>
-          <div className="flex gap-2 text-xs">
-            <div className="bg-blue-900/60 px-2 py-1 rounded-lg text-center"><div className="text-blue-300 font-bold">Jour</div><div className="font-bold">{gs.currentDay}/12</div></div>
-            <div className="bg-green-900/60 px-2 py-1 rounded-lg text-center"><div className="text-green-300 font-bold">Alt.</div><div className="font-bold">{gs.currentAltitude}m</div></div>
-            <div className="bg-slate-800 px-2 py-1 rounded-lg text-center"><div className="text-yellow-300 font-bold">Météo</div><div className="font-bold">{ch?.weather}</div></div>
+          <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
+            <span className="badge-ink">Jour {gs.currentDay}/12</span>
+            <span className="badge-ink badge-green">{gs.currentAltitude}m</span>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-soft)'}}>{ch?.weather}</span>
+            <button onClick={onBack} className="btn btn-sm">← Menu</button>
           </div>
-          <button onClick={onBack} className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg text-sm">← Menu</button>
         </div>
       </div>
 
-      {gs.gameOver && (
-        <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
-          <div className="text-8xl mb-6">💀</div>
-          <h2 className="text-4xl font-bold text-red-400 mb-4">FIN DE PARTIE</h2>
-          <p className="text-white text-xl text-center px-8">{gs.gameOverReason}</p>
+      {gs.gameOver&&(
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <div className="paper" style={{borderRadius:'4px',padding:'48px 36px',textAlign:'center',boxShadow:'var(--shadow-page)',position:'relative'}}>
+              <div className="deco-stitches"/>
+              <div style={{fontFamily:'var(--font-pixel)',fontSize:'80px',lineHeight:1}}>✝</div>
+              <h2 style={{fontFamily:'var(--font-display)',fontSize:'28px',color:'var(--ink-red)',margin:'16px 0 12px',letterSpacing:'.04em'}}>Fin de Partie</h2>
+              <p style={{fontFamily:'var(--font-serif)',fontSize:'16px',color:'var(--ink-soft)'}}>{gs.gameOverReason}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 space-y-5">
-            {/* Illustration */}
-            <div className="bg-gradient-to-br from-slate-800 to-blue-900 rounded-2xl border border-blue-800/40 flex items-center justify-center" style={{minHeight:'200px'}}>
-              <div className="text-center p-6">
-                <div className="text-8xl mb-3">{chEmoji(gs.currentChapter)}</div>
-                <div className="text-2xl font-bold text-blue-300">{ch?.title}</div>
-                <div className="text-slate-400 mt-1">{ch?.weather} • {gs.currentAltitude} m d'altitude</div>
+      <div style={{maxWidth:'960px',margin:'0 auto',padding:'14px'}}>
+        <div className="layout-player">
+          <div className="main-cols" style={{gridColumn:'1/3',display:'flex',flexDirection:'column',gap:'12px'}}>
+
+            {/* SCENE */}
+            <div className="paper photo-frame" style={{borderRadius:'2px',overflow:'hidden',aspectRatio:'16/9',display:'flex',alignItems:'center',justifyContent:'center',minHeight:'180px'}}>
+              <div style={{textAlign:'center',padding:'20px',position:'relative',zIndex:1}}>
+                <div style={{fontFamily:'var(--font-pixel)',fontSize:'96px',lineHeight:1,marginBottom:'8px'}}>{chEmoji(gs.currentChapter)}</div>
+                <div style={{fontFamily:'var(--font-display)',fontSize:'22px',letterSpacing:'.04em',color:'var(--ink)'}}>{ch?.title}</div>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-faded)',marginTop:'4px'}}>{ch?.weather} · {gs.currentAltitude} m</div>
               </div>
             </div>
 
-            {/* Summary narrative (short) */}
-            <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/50">
-              <h3 className="text-base font-bold text-yellow-300 mb-3">📖 Situation</h3>
-              <p className="text-slate-200 leading-relaxed whitespace-pre-line">{ch?.narrativeSummary}</p>
+            {/* NARRATIVE */}
+            <div className="card narrative">
+              <div className="section-label">Situation</div>
+              <p style={{fontFamily:'var(--font-serif)',fontSize:'15px',lineHeight:'1.75',whiteSpace:'pre-line',color:'var(--ink)'}}>{ch?.narrativeSummary}</p>
             </div>
 
-            {/* Choices */}
-            <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/50">
-              <h3 className="text-base font-bold text-green-300 mb-3">🎯 Options disponibles</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* CHOICES */}
+            <div className="card">
+              <div className="section-label" style={{color:'var(--ink-green)'}}>Options disponibles</div>
+              <div className="layout-2col">
                 {ch?.choices.map(choice=>{
                   const avail=isChoiceAvail(choice,gs);
                   return (
-                    <div key={choice.id} className={`rounded-xl p-4 border-2 ${avail?'border-green-600 bg-green-900/20':'border-slate-700 bg-slate-800/50'}`}>
-                      <div className="font-bold text-sm mb-1">{avail?'✅':'🔒'} Choix {choice.id}</div>
-                      <div className={`font-semibold text-sm mb-1 ${avail?'text-white':'text-slate-500'}`}>{choice.label}</div>
-                      <div className={`text-xs ${avail?'text-slate-300':'text-slate-600'}`}>{choice.description}</div>
-                      {!avail&&choice.requiresResource&&<div className="text-xs text-red-400 mt-2">🔒 Nécessite : {getRes(choice.requiresResource)?.name}</div>}
+                    <div key={choice.id} style={{border:`2px solid ${avail?'var(--ink-green)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'12px 14px',opacity:avail?1:.55,background:avail?'rgba(58,90,58,.06)':'transparent'}}>
+                      <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:avail?'var(--ink-green)':'var(--ink-faded)',marginBottom:'3px'}}>{avail?'✓':'✗'} Choix {choice.id}</div>
+                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:avail?'var(--ink)':'var(--ink-faded)',marginBottom:'5px'}}>{choice.label}</div>
+                      <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)',lineHeight:'1.4'}}>{choice.description}</div>
+                      {!avail&&choice.requiresResource&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)',marginTop:'6px'}}>🔒 {getRes(choice.requiresResource)?.name}</div>}
                     </div>
                   );
                 })}
               </div>
-              <p className="text-slate-600 text-xs mt-3 text-center italic">Le Narrateur annoncera le choix retenu</p>
+              <p style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginTop:'10px',textAlign:'center',fontStyle:'italic'}}>Le Narrateur annoncera le choix retenu</p>
             </div>
           </div>
 
-          {/* Players sidebar */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-slate-300 text-center text-lg">👥 Équipe</h3>
+          {/* PLAYERS SIDEBAR */}
+          <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+            <div className="section-label" style={{justifyContent:'center'}}>Équipe</div>
             {gs.players.map(p=><PlayerCard key={p.id} player={p}/>)}
           </div>
         </div>
@@ -979,53 +1035,52 @@ function PlayerScreen({gs,onBack}) {
 
 // ─── BETWEEN CHAPTERS ───────────────────────────────────
 function BetweenChapters({summary,chapter,players}) {
-  const activePlayers = players.filter(p=>!p.isKO);
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-xl">
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-3">🌙</div>
-          <h2 className="text-3xl font-bold text-white mb-1">Fin de Journée</h2>
-          <p className="text-blue-300 text-lg">{chapter?.title}</p>
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'24px'}}>
+      <div className="paper" style={{maxWidth:'560px',width:'100%',borderRadius:'4px',padding:'40px 36px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+        <div className="deco-stitches"/>
+        <div style={{textAlign:'center',marginBottom:'28px'}}>
+          <div style={{fontFamily:'var(--font-pixel)',fontSize:'64px',lineHeight:1,marginBottom:'10px'}}>🌙</div>
+          <div style={{fontFamily:'var(--font-display)',fontSize:'28px',letterSpacing:'.04em',color:'var(--ink)',marginBottom:'4px'}}>Fin de Journée</div>
+          <div style={{fontFamily:'var(--font-hand)',fontSize:'18px',color:'var(--ink-soft)'}}>{chapter?.title}</div>
         </div>
 
-        <div className="bg-slate-800 rounded-2xl p-6 mb-5 space-y-3 border border-slate-700">
-          <div className="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Ce qui s'est passé</div>
-          {summary.events.map((evt,i)=>(
-            <div key={i} className="flex items-start gap-3 text-slate-200">
-              <span className="text-xl shrink-0 mt-0.5">{evt.icon}</span>
-              <span className="text-sm leading-relaxed">{evt.text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-slate-800/60 rounded-2xl p-4 mb-5 border border-slate-700/50">
-          <div className="text-sm font-bold text-slate-400 mb-3">État de l'équipe</div>
-          <div className="grid grid-cols-2 gap-3">
-            {players.map(p=>(
-              <div key={p.id} className={`rounded-xl p-3 ${p.isKO?'bg-red-950/40 border border-red-900':'bg-slate-700'}`}>
-                <div className="font-bold text-sm mb-2">{p.isKO?'💀':'🧑'} {p.name}</div>
-                {!p.isKO&&(
-                  <>
-                    <div className="flex gap-1 mb-1 items-center">
-                      <span className="text-xs text-slate-400 w-12">⚡ Én.</span>
-                      <div className="flex-1 bg-slate-600 rounded-full h-2"><div className={`h-2 rounded-full ${p.energy>60?'bg-green-500':p.energy>30?'bg-yellow-500':'bg-red-500'}`} style={{width:`${p.energy}%`}}/></div>
-                      <span className="text-xs font-bold w-6 text-right">{p.energy}</span>
-                    </div>
-                    <div className="flex gap-1 items-center">
-                      <span className="text-xs text-slate-400 w-12">💙 Mor.</span>
-                      <div className="flex-1 bg-slate-600 rounded-full h-2"><div className={`h-2 rounded-full ${p.moral>60?'bg-blue-500':p.moral>30?'bg-purple-500':'bg-red-500'}`} style={{width:`${p.moral}%`}}/></div>
-                      <span className="text-xs font-bold w-6 text-right">{p.moral}</span>
-                    </div>
-                  </>
-                )}
-                {p.isKO&&<div className="text-red-400 text-xs">Évanoui(e)</div>}
+        <div className="card" style={{marginBottom:'16px'}}>
+          <div className="section-label">Ce qui s'est passé</div>
+          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+            {summary.events.map((evt,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'flex-start',gap:'10px'}}>
+                <span style={{fontFamily:'var(--font-pixel)',fontSize:'20px',lineHeight:1,flexShrink:0,marginTop:'2px'}}>{evt.icon}</span>
+                <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-soft)',lineHeight:'1.55'}}>{evt.text}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-slate-500 text-sm text-center italic">⏳ En attente du Narrateur pour continuer vers le prochain chapitre...</p>
+        <div style={{marginBottom:'18px'}}>
+          <div className="section-label">État de l'équipe</div>
+          <div className="layout-2col">
+            {players.map(p=>(
+              <div key={p.id} className="card" style={{padding:'10px 12px',opacity:p.isKO?.5:1,borderColor:p.isKO?'var(--ink-red)':undefined}}>
+                <div style={{fontFamily:'var(--font-serif)',fontSize:'14px',fontWeight:600,marginBottom:'7px',color:p.isKO?'var(--ink-red)':'var(--ink)'}}>
+                  {p.isKO?'✝ ':''}{p.name}
+                </div>
+                {p.isKO
+                  ?<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)'}}>Évanoui(e)</div>
+                  :(<>
+                    <div className="bar energy" style={{marginBottom:'5px'}}><span style={{width:`${p.energy}%`}}/></div>
+                    <div className="bar moral"><span style={{width:`${p.moral}%`}}/></div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginTop:'4px'}}>
+                      <span>⚡ {p.energy}</span><span>💙 {p.moral}</span>
+                    </div>
+                  </>)
+                }
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',textAlign:'center',fontStyle:'italic'}}>⏳ En attente du Narrateur pour continuer...</p>
       </div>
     </div>
   );
@@ -1034,37 +1089,46 @@ function BetweenChapters({summary,chapter,players}) {
 // ─── PLAYER CARD (sidebar) ──────────────────────────────
 function PlayerCard({player}) {
   const isKO=player.isKO;
-  const eC=player.energy>60?'bg-green-500':player.energy>30?'bg-yellow-500':'bg-red-500';
-  const mC=player.moral>60?'bg-blue-500':player.moral>30?'bg-purple-500':'bg-red-500';
   const slots=player.inventory.filter(i=>!getRes(i.resourceId)?.noSlot);
   return (
-    <div className={`rounded-2xl border p-4 ${isKO?'border-red-900 bg-red-950/20 opacity-60':'border-slate-700 bg-slate-800/70'}`}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className="text-2xl">{isKO?'💀':'🧑'}</div>
-        <div><div className="font-bold">{player.name}</div>{isKO&&<div className="text-red-400 text-xs">Évanoui(e)</div>}</div>
+    <div className={`card${isKO?' player-ko':''}`} style={{borderColor:isKO?'var(--ink-red)':undefined}}>
+      <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
+        <div style={{fontFamily:'var(--font-pixel)',fontSize:'26px',lineHeight:1}}>{isKO?'💀':'🧗'}</div>
+        <div>
+          <div style={{fontFamily:'var(--font-serif)',fontSize:'15px',fontWeight:600,color:isKO?'var(--ink-red)':'var(--ink)'}}>{player.name}</div>
+          {isKO&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)'}}>Évanoui(e)</div>}
+        </div>
       </div>
       {!isKO&&(<>
-        <div className="space-y-2 mb-4">
-          {[['energy','⚡ Énergie',eC],['moral','💙 Moral',mC]].map(([k,l,c])=>(
-            <div key={k}>
-              <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">{l}</span><span className="font-bold">{player[k]}/100</span></div>
-              <div className="bg-slate-700 rounded-full h-4"><div className={`${c} h-4 rounded-full`} style={{width:`${player[k]}%`}}/></div>
-            </div>
-          ))}
+        <div style={{marginBottom:'8px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>
+            <span>⚡ Énergie</span><span>{player.energy}/100</span>
+          </div>
+          <div className="bar energy"><span style={{width:`${player.energy}%`}}/></div>
+        </div>
+        <div style={{marginBottom:'10px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>
+            <span>💙 Moral</span><span>{player.moral}/100</span>
+          </div>
+          <div className="bar moral"><span style={{width:`${player.moral}%`}}/></div>
         </div>
         <div>
-          <div className="text-xs text-slate-400 mb-2">🎒 Inventaire ({slots.length}/{MAX_SLOTS})</div>
-          <div className="grid grid-cols-3 gap-1">
+          <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'6px'}}>🎒 Inventaire ({slots.length}/{MAX_SLOTS})</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'4px'}}>
             {Array.from({length:MAX_SLOTS}).map((_,si)=>{
               const item=slots[si]; const r=item?getRes(item.resourceId):null;
               return (
-                <div key={si} className={`rounded-lg p-1 text-center border flex flex-col items-center justify-center min-h-12 ${item?item.wet?'border-slate-600 bg-slate-700/40 opacity-50':'border-slate-500 bg-slate-700':'border-slate-800 bg-slate-900/20 border-dashed'}`}>
-                  {item?(<><div className="text-xl">{r?.icon||'?'}</div><div className="text-slate-300 leading-tight" style={{fontSize:'10px'}}>{r?.name?.split(' ')[0]}{item.portions!=null?` ×${item.portions}`:''}</div>{item.wet&&<div style={{fontSize:'9px'}} className="text-blue-400">💧mouillé</div>}</>):<div className="text-slate-700 text-sm">—</div>}
+                <div key={si} className={`inv-slot${item?item.wet?' wet':' filled':''}`}>
+                  {item?(<>
+                    <span style={{fontFamily:'var(--font-pixel)',fontSize:'18px',lineHeight:1}}>{r?.icon||'?'}</span>
+                    <span>{r?.name?.split(' ')[0]}{item.portions!=null?`×${item.portions}`:''}</span>
+                    {item.wet&&<span style={{fontSize:'8px',color:'var(--ink-blue)'}}>mouillé</span>}
+                  </>):<span style={{color:'var(--paper-edge)',fontSize:'12px'}}>—</span>}
                 </div>
               );
             })}
           </div>
-          {player.bonusMoral&&<div className="mt-2 text-xs bg-yellow-900/40 text-yellow-300 rounded-lg px-2 py-1 text-center">🙏 Bénédiction de départ</div>}
+          {player.bonusMoral&&<div style={{marginTop:'6px',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--gold-deep)',background:'rgba(200,157,63,.1)',border:'1px solid var(--gold)',borderRadius:'2px',padding:'3px 8px',textAlign:'center'}}>🙏 Bénédiction de départ</div>}
         </div>
       </>)}
     </div>
