@@ -1267,36 +1267,38 @@ function PlayerCard({player}) {
       {/* Sprite */}
       <div style={{flexShrink:0,paddingTop:'2px'}}>
         {player.costume
-          ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={2}/>
-          : <span style={{fontFamily:'var(--font-pixel)',fontSize:'28px',lineHeight:1}}>{isKO?'💀':'🧗'}</span>}
+          ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={3}/>
+          : <span style={{fontFamily:'var(--font-pixel)',fontSize:'42px',lineHeight:1}}>{isKO?'💀':'🧗'}</span>}
       </div>
       {/* Stats column */}
-      <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'3px'}}>
+      <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}}>
         {/* Name + role */}
-        <div style={{lineHeight:1,marginBottom:'1px'}}>
-          <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:isKO?'var(--ink-red)':'var(--ink)',letterSpacing:'.03em'}}>{isKO?'✝ ':''}{player.name}</div>
-          {player.role&&<div style={{fontFamily:'var(--font-type)',fontSize:'8px',color:'var(--ink-faded)',textTransform:'uppercase',letterSpacing:'.12em',marginTop:'1px'}}>{player.role}</div>}
+        <div style={{lineHeight:1,marginBottom:'2px'}}>
+          <div style={{fontFamily:'var(--font-display)',fontSize:'15px',color:isKO?'var(--ink-red)':'var(--ink)',letterSpacing:'.03em'}}>{isKO?'✝ ':''}{player.name}</div>
+          {player.role&&<div style={{fontFamily:'var(--font-type)',fontSize:'9px',color:'var(--ink-faded)',textTransform:'uppercase',letterSpacing:'.12em',marginTop:'2px'}}>{player.role}</div>}
         </div>
         {!isKO&&(<>
-          {/* Bars */}
-          <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-            <span style={{fontFamily:'var(--font-type)',fontSize:'7px',color:'var(--ink-faded)',width:'18px',flexShrink:0,letterSpacing:'.06em'}}>ÉN.</span>
-            <div className="bar energy" style={{flex:1,height:'5px'}}><span style={{width:`${player.energy}%`}}/></div>
+          {/* Bars avec score */}
+          <div style={{display:'flex',alignItems:'center',gap:'5px'}}>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'8px',color:'var(--ink-faded)',width:'20px',flexShrink:0,letterSpacing:'.06em'}}>ÉN.</span>
+            <div className="bar energy" style={{flex:1,height:'8px'}}><span style={{width:`${player.energy}%`}}/></div>
+            <span style={{fontFamily:'var(--font-pixel)',fontSize:'15px',color:'var(--energy)',width:'30px',textAlign:'right',flexShrink:0,lineHeight:1}}>{player.energy}</span>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:'4px',marginBottom:'4px'}}>
-            <span style={{fontFamily:'var(--font-type)',fontSize:'7px',color:'var(--ink-faded)',width:'18px',flexShrink:0,letterSpacing:'.06em'}}>MOR.</span>
-            <div className="bar moral" style={{flex:1,height:'5px'}}><span style={{width:`${player.moral}%`}}/></div>
+          <div style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'6px'}}>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'8px',color:'var(--ink-faded)',width:'20px',flexShrink:0,letterSpacing:'.06em'}}>MOR.</span>
+            <div className="bar moral" style={{flex:1,height:'8px'}}><span style={{width:`${player.moral}%`}}/></div>
+            <span style={{fontFamily:'var(--font-pixel)',fontSize:'15px',color:'var(--moral)',width:'30px',textAlign:'right',flexShrink:0,lineHeight:1}}>{player.moral}</span>
           </div>
-          {/* Inventory */}
-          <div style={{display:'flex',gap:'2px'}}>
+          {/* Inventory — slots agrandis */}
+          <div style={{display:'flex',gap:'3px'}}>
             {Array.from({length:MAX_SLOTS}).map((_,si)=>{
               const item=slots[si]; const r=item?getRes(item.resourceId):null;
               return (
-                <div key={si} style={{width:'20px',height:'20px',border:`1px ${item?'solid':'dashed'} ${item?'var(--paper-stain)':'var(--paper-edge)'}`,borderRadius:'2px',display:'flex',alignItems:'center',justifyContent:'center',background:item?'rgba(200,157,63,.08)':'transparent',fontSize:'13px',fontFamily:'var(--font-pixel)',position:'relative',flexShrink:0}}>
+                <div key={si} style={{width:'28px',height:'28px',border:`1px ${item?'solid':'dashed'} ${item?'var(--paper-stain)':'var(--paper-edge)'}`,borderRadius:'2px',display:'flex',alignItems:'center',justifyContent:'center',background:item?'rgba(200,157,63,.08)':'transparent',fontSize:'18px',fontFamily:'var(--font-pixel)',position:'relative',flexShrink:0}}>
                   {item?(<>
                     <span style={{lineHeight:1,opacity:item.wet?.5:1}}>{r?.icon||'?'}</span>
-                    {item.portions!=null&&<span style={{position:'absolute',bottom:0,right:'1px',fontSize:'6px',fontFamily:'var(--font-type)',color:'var(--ink)',background:'rgba(241,231,207,.9)',padding:'0 1px',lineHeight:1.2,borderRadius:'1px'}}>{item.portions}</span>}
-                  </>):<span style={{color:'var(--paper-edge)',fontSize:'8px'}}>—</span>}
+                    {item.portions!=null&&<span style={{position:'absolute',bottom:0,right:'1px',fontSize:'7px',fontFamily:'var(--font-type)',color:'var(--ink)',background:'rgba(241,231,207,.92)',padding:'0 1px',lineHeight:1.2,borderRadius:'1px'}}>{item.portions}</span>}
+                  </>):<span style={{color:'var(--paper-edge)',fontSize:'9px'}}>—</span>}
                 </div>
               );
             })}
