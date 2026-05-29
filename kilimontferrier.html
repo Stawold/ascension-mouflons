@@ -225,10 +225,29 @@ Trois options s'offrent à vous. Et pour ceux qui ont étudié la carte... une q
 const MAX_SLOTS = 6;
 const STORAGE_KEY = 'ascension_mouflons_v2';
 
+const HAT_COLORS = [
+  {label:'Rouge',  value:'#c0392b'},{label:'Bleu',   value:'#2471a3'},
+  {label:'Vert',   value:'#1e8449'},{label:'Jaune',  value:'#c9a227'},
+  {label:'Orange', value:'#ca6f1e'},{label:'Violet', value:'#7d3c98'},
+  {label:'Blanc',  value:'#ede8da'},{label:'Noir',   value:'#2c3e50'},
+];
+const SHIRT_COLORS = [
+  {label:'Rouge',  value:'#c0392b'},{label:'Bleu',   value:'#2471a3'},
+  {label:'Vert',   value:'#1e8449'},{label:'Jaune',  value:'#c9a227'},
+  {label:'Orange', value:'#ca6f1e'},{label:'Teal',   value:'#148f77'},
+  {label:'Blanc',  value:'#ede8da'},{label:'Gris',   value:'#717d7e'},
+];
+const SHOES_COLORS = [
+  {label:'Marron', value:'#7f5539'},{label:'Brun',   value:'#4a2d10'},
+  {label:'Noir',   value:'#2c2c2c'},{label:'Rouge',  value:'#922b21'},
+  {label:'Bleu',   value:'#1a5276'},{label:'Blanc',  value:'#e8e3d8'},
+];
+const DEFAULT_COSTUME = {hat:'#c0392b', shirt:'#2471a3', shoes:'#7f5539'};
+
 // ═══════════════════════════════════════════════════════
 // ÉTAT
 // ═══════════════════════════════════════════════════════
-const createInitialState = (playerNames) => ({
+const createInitialState = (playerNames, costumes=[]) => ({
   currentChapter:1, currentDay:1, currentAltitude:0,
   flags:{}, choiceMade:false, lastChoiceLabel:null,
   d18EventApplied:false, lastD18Result:null, lastD18Title:null,
@@ -237,6 +256,7 @@ const createInitialState = (playerNames) => ({
   interChapterSummary:null,
   players: playerNames.map((name,i) => ({
     id:i, name, energy:100, moral:100, isKO:false, bonusMoral:false,
+    costume: costumes[i] ? {...costumes[i]} : {...DEFAULT_COSTUME},
     inventory:[
       {resourceId:'sandwich',portions:3,wet:false},
       {resourceId:'eau',portions:3,wet:false},
@@ -286,6 +306,7 @@ const chEmoji = (ch) => ({1:'🏕️',2:'🌲',3:'🌿',4:'🌊',5:'🏔️',6:'
 function App() {
   const [view, setView] = useState('home');
   const [gs, setGs] = useState(null);
+  const [pendingNames, setPendingNames] = useState([]);
 
   useEffect(() => {
     const h = (e) => { if(e.key===STORAGE_KEY){ const s=loadState(); if(s) setGs(s); } };
@@ -306,11 +327,12 @@ function App() {
     setGs(p => { const n=typeof fn==='function'?fn(p):fn; saveState(n); return n; });
   },[]);
 
-  const start = (names) => { const s=createInitialState(names); saveState(s); setGs(s); setView('master'); };
+  const start = (names, costumes) => { const s=createInitialState(names, costumes); saveState(s); setGs(s); setView('master'); };
   const reset = () => { clearState(); setGs(null); setView('home'); };
 
-  if (view==='home')   return <HomeScreen onNew={()=>setView('setup')} onMaster={()=>{const s=loadState();if(s){setGs(s);setView('master');}else alert('Aucune partie.')}} onPlayer={()=>{const s=loadState();if(s){setGs(s);setView('player');}else alert('Aucune partie.')}} />;
-  if (view==='setup')  return <SetupScreen onStart={start} onBack={()=>setView('home')} />;
+  if (view==='home')      return <HomeScreen onNew={()=>setView('setup')} onMaster={()=>{const s=loadState();if(s){setGs(s);setView('master');}else alert('Aucune partie.')}} onPlayer={()=>{const s=loadState();if(s){setGs(s);setView('player');}else alert('Aucune partie.')}} />;
+  if (view==='setup')     return <SetupScreen onNext={(names)=>{setPendingNames(names);setView('customize');}} onBack={()=>setView('home')} />;
+  if (view==='customize') return <CharacterCustomizeScreen names={pendingNames} onStart={start} onBack={()=>setView('setup')} />;
   if (view==='master' && gs) return <MasterScreen gs={gs} upd={upd} onReset={reset} onPlayer={()=>setView('player')} />;
   if (view==='player' && gs) return <PlayerScreen gs={gs} onBack={()=>setView('home')} />;
   return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--font-type)',color:'var(--ink-faded)',fontSize:'14px',letterSpacing:'.1em'}}>Chargement...</div>;
@@ -345,7 +367,7 @@ function HomeScreen({onNew,onMaster,onPlayer}) {
 // ═══════════════════════════════════════════════════════
 // SETUP
 // ═══════════════════════════════════════════════════════
-function SetupScreen({onStart,onBack}) {
+function SetupScreen({onNext,onBack}) {
   const [count,setCount] = useState(3);
   const [names,setNames] = useState(['Joueur 1','Joueur 2','Joueur 3','','','']);
   const changeCount = (n) => { setCount(n); setNames(p=>{ const x=[...p]; for(let i=0;i<6;i++) if(!x[i]||x[i]===`Joueur ${i+1}`) x[i]=i<n?`Joueur ${i+1}`:''; return x; }); };
@@ -377,7 +399,109 @@ function SetupScreen({onStart,onBack}) {
         </div>
         <div style={{display:'flex',gap:'10px'}}>
           <button onClick={onBack} className="btn" style={{flex:1}}>← Retour</button>
-          <button onClick={()=>onStart(names.slice(0,count).map((n,i)=>n.trim()||`Joueur ${i+1}`))} className="btn btn-primary" style={{flex:1}}>Démarrer !</button>
+          <button onClick={()=>onNext(names.slice(0,count).map((n,i)=>n.trim()||`Joueur ${i+1}`))} className="btn btn-primary" style={{flex:1}}>Suivant →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// CHARACTER SPRITE
+// ═══════════════════════════════════════════════════════
+function CharacterSprite({hat=DEFAULT_COSTUME.hat, shirt=DEFAULT_COSTUME.shirt, shoes=DEFAULT_COSTUME.shoes, size=3}) {
+  const skin='#f5c89a', pants='#4a3060';
+  return (
+    <svg width={16*size} height={24*size} viewBox="0 0 16 24" style={{imageRendering:'pixelated',flexShrink:0,display:'block'}}>
+      {/* hat crown */}
+      <rect x="5" y="0" width="6" height="3" fill={hat}/>
+      {/* hat brim */}
+      <rect x="3" y="3" width="10" height="1" fill={hat}/>
+      {/* face */}
+      <rect x="5" y="4" width="6" height="6" fill={skin}/>
+      {/* hair sides */}
+      <rect x="4" y="4" width="1" height="3" fill="#3d2010"/>
+      <rect x="11" y="4" width="1" height="3" fill="#3d2010"/>
+      {/* eyes */}
+      <rect x="6" y="6" width="1" height="1" fill="#1a0a00"/>
+      <rect x="9" y="6" width="1" height="1" fill="#1a0a00"/>
+      {/* smile */}
+      <rect x="7" y="8" width="1" height="1" fill="#c07855"/>
+      <rect x="8" y="9" width="1" height="1" fill="#c07855"/>
+      {/* shirt body */}
+      <rect x="4" y="10" width="8" height="5" fill={shirt}/>
+      {/* left arm */}
+      <rect x="2" y="10" width="2" height="4" fill={shirt}/>
+      {/* right arm */}
+      <rect x="12" y="10" width="2" height="4" fill={shirt}/>
+      {/* hands */}
+      <rect x="2" y="14" width="2" height="1" fill={skin}/>
+      <rect x="12" y="14" width="2" height="1" fill={skin}/>
+      {/* left leg */}
+      <rect x="4" y="15" width="3" height="5" fill={pants}/>
+      {/* right leg */}
+      <rect x="9" y="15" width="3" height="5" fill={pants}/>
+      {/* left shoe */}
+      <rect x="3" y="20" width="4" height="2" fill={shoes}/>
+      {/* right shoe */}
+      <rect x="9" y="20" width="4" height="2" fill={shoes}/>
+    </svg>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// CHARACTER CUSTOMIZE SCREEN
+// ═══════════════════════════════════════════════════════
+function ColorSwatch({colors, selected, onSelect}) {
+  return (
+    <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+      {colors.map(c=>(
+        <button key={c.value} onClick={()=>onSelect(c.value)} title={c.label}
+          style={{width:'22px',height:'22px',borderRadius:'2px',background:c.value,border:`2px solid ${selected===c.value?'var(--ink)':'var(--paper-edge)'}`,cursor:'pointer',boxShadow:selected===c.value?'0 0 0 1px var(--paper)':undefined,transform:selected===c.value?'scale(1.2)':'none',transition:'transform 100ms,border-color 100ms',flexShrink:0}}/>
+      ))}
+    </div>
+  );
+}
+
+function CharacterCustomizeScreen({names, onStart, onBack}) {
+  const [costumes, setCostumes] = useState(
+    names.map(()=>({...DEFAULT_COSTUME}))
+  );
+  const update = (i, part, val) => setCostumes(prev => {
+    const next=[...prev]; next[i]={...next[i],[part]:val}; return next;
+  });
+
+  return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',overflowY:'auto'}}>
+      <div className="paper" style={{maxWidth:'900px',width:'100%',borderRadius:'4px',padding:'40px 32px',boxShadow:'var(--shadow-page)',position:'relative'}}>
+        <div className="deco-stitches"/>
+        <h2 style={{fontFamily:'var(--font-display)',fontSize:'24px',textAlign:'center',marginBottom:'6px',letterSpacing:'.05em',color:'var(--ink)'}}>Personnalisation des Aventuriers</h2>
+        <p style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',textAlign:'center',marginBottom:'28px',textTransform:'uppercase',letterSpacing:'.1em'}}>Chaque joueur choisit la tenue de son personnage</p>
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px',marginBottom:'28px'}}>
+          {names.map((name,i)=>(
+            <div key={i} className="card" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'10px',padding:'16px 14px'}}>
+              <CharacterSprite hat={costumes[i].hat} shirt={costumes[i].shirt} shoes={costumes[i].shoes} size={4}/>
+              <div style={{fontFamily:'var(--font-hand)',fontSize:'20px',color:'var(--ink)',textAlign:'center'}}>{name}</div>
+              <div style={{width:'100%'}}>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'5px',textTransform:'uppercase',letterSpacing:'.1em'}}>🧢 Casquette</div>
+                <ColorSwatch colors={HAT_COLORS} selected={costumes[i].hat} onSelect={v=>update(i,'hat',v)}/>
+              </div>
+              <div style={{width:'100%'}}>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'5px',textTransform:'uppercase',letterSpacing:'.1em'}}>👕 T-Shirt</div>
+                <ColorSwatch colors={SHIRT_COLORS} selected={costumes[i].shirt} onSelect={v=>update(i,'shirt',v)}/>
+              </div>
+              <div style={{width:'100%'}}>
+                <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'5px',textTransform:'uppercase',letterSpacing:'.1em'}}>👟 Chaussures</div>
+                <ColorSwatch colors={SHOES_COLORS} selected={costumes[i].shoes} onSelect={v=>update(i,'shoes',v)}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
+          <button onClick={onBack} className="btn" style={{minWidth:'120px'}}>← Retour</button>
+          <button onClick={()=>onStart(names, costumes)} className="btn btn-primary" style={{minWidth:'180px',fontSize:'15px',padding:'12px 24px'}}>Lancer la partie !</button>
         </div>
       </div>
     </div>
@@ -876,11 +1000,16 @@ function ItemGrantModal({grant,players,onGrant,remaining}) {
 function MasterPlayerCard({player,onEdit,onStat}) {
   return (
     <div className={`card${player.isKO?' player-ko':''}`} style={{padding:'10px 12px',borderColor:player.isKO?'var(--ink-red)':undefined}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
-        <div style={{fontFamily:'var(--font-serif)',fontSize:'14px',fontWeight:600,color:player.isKO?'var(--ink-red)':'var(--ink)'}}>
-          {player.isKO?'✝ ':''}  {player.name}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px',gap:'6px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
+          {player.costume
+            ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={1}/>
+            : null}
+          <div style={{fontFamily:'var(--font-serif)',fontSize:'14px',fontWeight:600,color:player.isKO?'var(--ink-red)':'var(--ink)'}}>
+            {player.isKO?'✝ ':''}{player.name}
+          </div>
         </div>
-        <button onClick={onEdit} className="btn btn-sm" style={{padding:'2px 8px',fontSize:'9px'}}>✎ Inv.</button>
+        <button onClick={onEdit} className="btn btn-sm" style={{padding:'2px 8px',fontSize:'9px',flexShrink:0}}>✎ Inv.</button>
       </div>
       {[['energy','Énergie'],['moral','Moral']].map(([k,l])=>(
         <div key={k} style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'6px'}}>
@@ -1009,11 +1138,9 @@ function PlayerScreen({gs,onBack}) {
                 {ch?.choices.map(choice=>{
                   const avail=isChoiceAvail(choice,gs);
                   return (
-                    <div key={choice.id} style={{border:`2px solid ${avail?'var(--ink-green)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'12px 14px',opacity:avail?1:.55,background:avail?'rgba(58,90,58,.06)':'transparent'}}>
-                      <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:avail?'var(--ink-green)':'var(--ink-faded)',marginBottom:'3px'}}>{avail?'✓':'✗'} Choix {choice.id}</div>
-                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:avail?'var(--ink)':'var(--ink-faded)',marginBottom:'5px'}}>{choice.label}</div>
-                      <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)',lineHeight:'1.4'}}>{choice.description}</div>
-                      {!avail&&choice.requiresResource&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)',marginTop:'6px'}}>🔒 {getRes(choice.requiresResource)?.name}</div>}
+                    <div key={choice.id} style={{border:`2px solid ${avail?'var(--ink-green)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'12px 14px',opacity:avail?1:.55,background:avail?'rgba(58,90,58,.06)':'transparent',display:'flex',alignItems:'center',gap:'8px'}}>
+                      <span style={{fontFamily:'var(--font-type)',fontSize:'13px',color:avail?'var(--ink-green)':'var(--ink-faded)',flexShrink:0}}>{avail?'✓':'✗'}</span>
+                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:avail?'var(--ink)':'var(--ink-faded)'}}>{choice.label}</div>
                     </div>
                   );
                 })}
@@ -1092,8 +1219,10 @@ function PlayerCard({player}) {
   const slots=player.inventory.filter(i=>!getRes(i.resourceId)?.noSlot);
   return (
     <div className={`card${isKO?' player-ko':''}`} style={{borderColor:isKO?'var(--ink-red)':undefined}}>
-      <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
-        <div style={{fontFamily:'var(--font-pixel)',fontSize:'26px',lineHeight:1}}>{isKO?'💀':'🧗'}</div>
+      <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+        {player.costume
+          ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={2}/>
+          : <div style={{fontFamily:'var(--font-pixel)',fontSize:'26px',lineHeight:1}}>{isKO?'💀':'🧗'}</div>}
         <div>
           <div style={{fontFamily:'var(--font-serif)',fontSize:'15px',fontWeight:600,color:isKO?'var(--ink-red)':'var(--ink)'}}>{player.name}</div>
           {isKO&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)'}}>Évanoui(e)</div>}
