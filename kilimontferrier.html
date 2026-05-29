@@ -105,18 +105,26 @@
 
   /* ── Responsive grids ── */
   .layout-master{display:grid;grid-template-columns:1fr 1fr 280px;gap:10px;align-items:start;}
-  .layout-player{display:grid;grid-template-columns:1fr 1fr 260px;gap:12px;align-items:start;}
   .layout-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .layout-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
   @media(max-width:768px){
-    .layout-master,.layout-player{grid-template-columns:1fr;}
-    .layout-master .main-cols,.layout-player .main-cols{grid-column:auto!important;}
+    .layout-master{grid-template-columns:1fr;}
     .layout-2col{grid-template-columns:1fr;}
     .layout-3col{grid-template-columns:1fr 1fr;}
   }
   @media(max-width:480px){
     .layout-3col{grid-template-columns:1fr;}
   }
+
+  /* ── Open Book ── */
+  .book-wrap{display:flex;overflow:hidden;box-shadow:-4px 6px 24px rgba(0,0,0,.45),4px 6px 24px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.28);border-radius:2px;min-height:150px;}
+  .book-left{flex:1;background:linear-gradient(105deg,#ede2c0 0%,#f5ead2 35%,#e8d8b0 100%);padding:14px 18px 14px 26px;box-shadow:inset -12px 0 24px rgba(90,60,20,.22);}
+  .book-spine{width:20px;background:linear-gradient(90deg,#2e1a06 0%,#7a4a18 28%,#c08428 50%,#7a4a18 72%,#2e1a06 100%);flex-shrink:0;box-shadow:inset 0 0 8px rgba(0,0,0,.55),2px 0 6px rgba(0,0,0,.18);}
+  .book-right{flex:1.6;background:linear-gradient(255deg,#ede2c0 0%,#f5ead2 35%,#e8d8b0 100%);padding:14px 26px 14px 20px;box-shadow:inset 12px 0 24px rgba(90,60,20,.18);}
+  /* ── Player compact card ── */
+  .player-compact{padding:9px 10px !important;}
+  .player-compact .inv-icon{width:23px;height:23px;border:1px dashed var(--paper-edge);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:13px;font-family:var(--font-pixel);position:relative;background:rgba(43,29,18,.04);}
+  .player-compact .inv-icon.filled{border-color:var(--paper-stain);background:rgba(200,157,63,.1);border-style:solid;}
   </style>
 </head>
 <body>
@@ -1082,23 +1090,9 @@ function PlayerScreen({gs,onBack}) {
   if (gs.interChapterSummary) return <BetweenChapters summary={gs.interChapterSummary} chapter={ch} players={gs.players} />;
 
   return (
-    <div style={{minHeight:'100vh',background:'#2a2014'}}>
-      {/* STICKY HEADER */}
-      <div className="paper" style={{position:'sticky',top:0,zIndex:10,padding:'10px 16px',boxShadow:'var(--shadow-card)',borderBottom:'2px solid var(--paper-edge)'}}>
-        <div style={{maxWidth:'960px',margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-          <div>
-            <div style={{fontFamily:'var(--font-display)',fontSize:'16px',letterSpacing:'.04em',color:'var(--ink)'}}>Ascension &amp; Mouflons</div>
-            <div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)'}}>{ch?.title}</div>
-          </div>
-          <div style={{display:'flex',gap:'6px',alignItems:'center',flexWrap:'wrap'}}>
-            <span className="badge-ink">Jour {gs.currentDay}/12</span>
-            <span className="badge-ink badge-green">{gs.currentAltitude}m</span>
-            <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-soft)'}}>{ch?.weather}</span>
-            <button onClick={onBack} className="btn btn-sm">← Menu</button>
-          </div>
-        </div>
-      </div>
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',background:'#2a2014'}}>
 
+      {/* GAME OVER MODAL */}
       {gs.gameOver&&(
         <div className="modal-overlay">
           <div className="modal-box">
@@ -1112,49 +1106,96 @@ function PlayerScreen({gs,onBack}) {
         </div>
       )}
 
-      <div style={{maxWidth:'960px',margin:'0 auto',padding:'14px'}}>
-        <div className="layout-player">
-          <div className="main-cols" style={{gridColumn:'1/3',display:'flex',flexDirection:'column',gap:'12px'}}>
-
-            {/* SCENE */}
-            <div className="paper photo-frame" style={{borderRadius:'2px',overflow:'hidden',aspectRatio:'16/9',display:'flex',alignItems:'center',justifyContent:'center',minHeight:'180px'}}>
-              <div style={{textAlign:'center',padding:'20px',position:'relative',zIndex:1}}>
-                <div style={{fontFamily:'var(--font-pixel)',fontSize:'96px',lineHeight:1,marginBottom:'8px'}}>{chEmoji(gs.currentChapter)}</div>
-                <div style={{fontFamily:'var(--font-display)',fontSize:'22px',letterSpacing:'.04em',color:'var(--ink)'}}>{ch?.title}</div>
-                <div style={{fontFamily:'var(--font-type)',fontSize:'12px',color:'var(--ink-faded)',marginTop:'4px'}}>{ch?.weather} · {gs.currentAltitude} m</div>
-              </div>
-            </div>
-
-            {/* NARRATIVE */}
-            <div className="card narrative">
-              <div className="section-label">Situation</div>
-              <p style={{fontFamily:'var(--font-serif)',fontSize:'15px',lineHeight:'1.75',whiteSpace:'pre-line',color:'var(--ink)'}}>{ch?.narrativeSummary}</p>
-            </div>
-
-            {/* CHOICES */}
-            <div className="card">
-              <div className="section-label" style={{color:'var(--ink-green)'}}>Options disponibles</div>
-              <div className="layout-2col">
-                {ch?.choices.map(choice=>{
-                  const avail=isChoiceAvail(choice,gs);
-                  return (
-                    <div key={choice.id} style={{border:`2px solid ${avail?'var(--ink-green)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'12px 14px',opacity:avail?1:.55,background:avail?'rgba(58,90,58,.06)':'transparent',display:'flex',alignItems:'center',gap:'8px'}}>
-                      <span style={{fontFamily:'var(--font-type)',fontSize:'13px',color:avail?'var(--ink-green)':'var(--ink-faded)',flexShrink:0}}>{avail?'✓':'✗'}</span>
-                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:avail?'var(--ink)':'var(--ink-faded)'}}>{choice.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginTop:'10px',textAlign:'center',fontStyle:'italic'}}>Le Narrateur annoncera le choix retenu</p>
-            </div>
+      {/* STICKY HEADER */}
+      <div className="paper" style={{position:'sticky',top:0,zIndex:10,padding:'7px 14px',borderBottom:'2px solid var(--paper-edge)',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'15px',letterSpacing:'.04em',color:'var(--ink)'}}>Ascension &amp; Mouflons</div>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)'}}>{ch?.title}</span>
           </div>
-
-          {/* PLAYERS SIDEBAR */}
-          <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-            <div className="section-label" style={{justifyContent:'center'}}>Équipe</div>
-            {gs.players.map(p=><PlayerCard key={p.id} player={p}/>)}
+          <div style={{display:'flex',gap:'5px',alignItems:'center',flexWrap:'wrap'}}>
+            <span className="badge-ink">Jour {gs.currentDay}/12</span>
+            <span className="badge-ink badge-green">{gs.currentAltitude}m</span>
+            <span style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-soft)'}}>{ch?.weather}</span>
+            <button onClick={onBack} className="btn btn-sm">← Menu</button>
           </div>
         </div>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div style={{flex:1,padding:'10px 12px',display:'flex',flexDirection:'column',gap:'10px'}}>
+
+        {/* OPEN BOOK */}
+        <div className="book-wrap">
+          {/* Left page — chapter identity */}
+          <div className="book-left" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',minWidth:'160px',maxWidth:'240px',flexShrink:0}}>
+            <div style={{fontFamily:'var(--font-pixel)',fontSize:'72px',lineHeight:1,marginBottom:'8px',filter:'drop-shadow(1px 2px 4px rgba(0,0,0,.25))'}}>{chEmoji(gs.currentChapter)}</div>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'16px',letterSpacing:'.04em',color:'var(--ink)',marginBottom:'5px'}}>{ch?.title}</div>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>{ch?.weather}</div>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)'}}>{gs.currentAltitude} m · Jour {gs.currentDay}</div>
+          </div>
+          <div className="book-spine"/>
+          {/* Right page — narrative */}
+          <div className="book-right" style={{display:'flex',flexDirection:'column',justifyContent:'center'}}>
+            <div style={{fontFamily:'var(--font-type)',fontSize:'9px',color:'var(--ink-faded)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:'6px'}}>Situation</div>
+            <p style={{fontFamily:'var(--font-serif)',fontSize:'13px',lineHeight:'1.6',color:'var(--ink)',margin:0,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:6,WebkitBoxOrient:'vertical'}}>{ch?.narrativeSummary}</p>
+          </div>
+        </div>
+
+        {/* CHOICES + RESULTS ROW */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+
+          {/* Choices */}
+          <div className="card" style={{padding:'10px 12px'}}>
+            <div className="section-label" style={{color:'var(--ink-green)',fontSize:'12px',marginBottom:'7px'}}>Options</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'5px'}}>
+              {ch?.choices.map(choice=>{
+                const avail=isChoiceAvail(choice,gs);
+                const chosen=gs.choiceMade&&gs.lastChoiceLabel===choice.label;
+                return (
+                  <div key={choice.id} style={{border:`2px solid ${chosen?'var(--gold)':avail?'var(--ink-green)':'var(--paper-edge)'}`,borderRadius:'2px',padding:'7px 9px',opacity:avail||chosen?1:.5,background:chosen?'rgba(200,157,63,.15)':avail?'rgba(58,90,58,.06)':'transparent',display:'flex',alignItems:'flex-start',gap:'6px'}}>
+                    <span style={{fontFamily:'var(--font-type)',fontSize:'12px',color:chosen?'var(--gold)':avail?'var(--ink-green)':'var(--ink-faded)',flexShrink:0,lineHeight:1.3}}>{chosen?'★':avail?'✓':'✗'}</span>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'12px',color:chosen?'var(--gold-deep)':avail?'var(--ink)':'var(--ink-faded)',lineHeight:'1.3'}}>{choice.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dice results + chosen */}
+          <div className="card" style={{padding:'10px 12px'}}>
+            <div className="section-label" style={{fontSize:'12px',marginBottom:'7px'}}>Résultats</div>
+            {!gs.lastD18Result&&!gs.choiceMade
+              ?<div style={{fontFamily:'var(--font-type)',fontSize:'11px',color:'var(--ink-faded)',fontStyle:'italic',textAlign:'center',padding:'12px 0'}}>En attente des résultats...</div>
+              :<div style={{display:'flex',flexDirection:'column',gap:'7px'}}>
+                {gs.lastD18Result&&(
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',background:'rgba(42,74,110,.08)',border:'1px solid rgba(42,74,110,.3)',borderRadius:'3px'}}>
+                    <div style={{textAlign:'center',flexShrink:0}}>
+                      <div style={{fontFamily:'var(--font-type)',fontSize:'8px',color:'var(--ink-faded)',textTransform:'uppercase',letterSpacing:'.1em',lineHeight:1,marginBottom:'2px'}}>D18</div>
+                      <div style={{fontFamily:'var(--font-pixel)',fontSize:'34px',lineHeight:1,color:'var(--ink-blue)'}}>{gs.lastD18Result}</div>
+                    </div>
+                    <div style={{fontFamily:'var(--font-serif)',fontSize:'13px',color:'var(--ink)',lineHeight:'1.4'}}>{gs.lastD18Title}</div>
+                  </div>
+                )}
+                {gs.choiceMade&&(
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',background:'rgba(58,90,58,.1)',border:'1px solid rgba(58,90,58,.35)',borderRadius:'3px'}}>
+                    <span style={{fontFamily:'var(--font-pixel)',fontSize:'28px',lineHeight:1,flexShrink:0}}>🎯</span>
+                    <div>
+                      <div style={{fontFamily:'var(--font-type)',fontSize:'8px',color:'var(--ink-faded)',textTransform:'uppercase',letterSpacing:'.1em',lineHeight:1,marginBottom:'3px'}}>Choix retenu</div>
+                      <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:'var(--ink-green)'}}>{gs.lastChoiceLabel}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            }
+          </div>
+        </div>
+
+        {/* PLAYERS GRID */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:'8px'}}>
+          {gs.players.map(p=><PlayerCard key={p.id} player={p}/>)}
+        </div>
+
       </div>
     </div>
   );
@@ -1213,52 +1254,46 @@ function BetweenChapters({summary,chapter,players}) {
   );
 }
 
-// ─── PLAYER CARD (sidebar) ──────────────────────────────
+// ─── PLAYER CARD (compact grid) ─────────────────────────
 function PlayerCard({player}) {
   const isKO=player.isKO;
   const slots=player.inventory.filter(i=>!getRes(i.resourceId)?.noSlot);
   return (
-    <div className={`card${isKO?' player-ko':''}`} style={{borderColor:isKO?'var(--ink-red)':undefined}}>
-      <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+    <div className={`card player-compact${isKO?' player-ko':''}`} style={{borderColor:isKO?'var(--ink-red)':undefined}}>
+      {/* sprite + name */}
+      <div style={{display:'flex',alignItems:'center',gap:'7px',marginBottom:'7px'}}>
         {player.costume
-          ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={2}/>
-          : <div style={{fontFamily:'var(--font-pixel)',fontSize:'26px',lineHeight:1}}>{isKO?'💀':'🧗'}</div>}
-        <div>
-          <div style={{fontFamily:'var(--font-serif)',fontSize:'15px',fontWeight:600,color:isKO?'var(--ink-red)':'var(--ink)'}}>{player.name}</div>
-          {isKO&&<div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-red)'}}>Évanoui(e)</div>}
-        </div>
+          ? <CharacterSprite hat={player.costume.hat} shirt={player.costume.shirt} shoes={player.costume.shoes} size={1.5}/>
+          : <span style={{fontFamily:'var(--font-pixel)',fontSize:'22px',lineHeight:1}}>{isKO?'💀':'🧗'}</span>}
+        <div style={{fontFamily:'var(--font-serif)',fontSize:'13px',fontWeight:600,lineHeight:1.2,color:isKO?'var(--ink-red)':'var(--ink)',wordBreak:'break-word'}}>{player.name}{isKO&&<div style={{fontFamily:'var(--font-type)',fontSize:'9px',color:'var(--ink-red)'}}>Évanoui(e)</div>}</div>
       </div>
       {!isKO&&(<>
-        <div style={{marginBottom:'8px'}}>
-          <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>
-            <span>⚡ Énergie</span><span>{player.energy}/100</span>
-          </div>
-          <div className="bar energy"><span style={{width:`${player.energy}%`}}/></div>
+        {/* bars */}
+        <div style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'3px'}}>
+          <span style={{fontSize:'9px',width:'13px',flexShrink:0,lineHeight:1}}>⚡</span>
+          <div className="bar energy" style={{flex:1,height:'6px'}}><span style={{width:`${player.energy}%`}}/></div>
+          <span style={{fontFamily:'var(--font-pixel)',fontSize:'12px',color:'var(--energy)',width:'24px',textAlign:'right'}}>{player.energy}</span>
         </div>
-        <div style={{marginBottom:'10px'}}>
-          <div style={{display:'flex',justifyContent:'space-between',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'3px'}}>
-            <span>💙 Moral</span><span>{player.moral}/100</span>
-          </div>
-          <div className="bar moral"><span style={{width:`${player.moral}%`}}/></div>
+        <div style={{display:'flex',alignItems:'center',gap:'5px',marginBottom:'7px'}}>
+          <span style={{fontSize:'9px',width:'13px',flexShrink:0,lineHeight:1}}>💙</span>
+          <div className="bar moral" style={{flex:1,height:'6px'}}><span style={{width:`${player.moral}%`}}/></div>
+          <span style={{fontFamily:'var(--font-pixel)',fontSize:'12px',color:'var(--moral)',width:'24px',textAlign:'right'}}>{player.moral}</span>
         </div>
-        <div>
-          <div style={{fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--ink-faded)',marginBottom:'6px'}}>🎒 Inventaire ({slots.length}/{MAX_SLOTS})</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'4px'}}>
-            {Array.from({length:MAX_SLOTS}).map((_,si)=>{
-              const item=slots[si]; const r=item?getRes(item.resourceId):null;
-              return (
-                <div key={si} className={`inv-slot${item?item.wet?' wet':' filled':''}`}>
-                  {item?(<>
-                    <span style={{fontFamily:'var(--font-pixel)',fontSize:'18px',lineHeight:1}}>{r?.icon||'?'}</span>
-                    <span>{r?.name?.split(' ')[0]}{item.portions!=null?`×${item.portions}`:''}</span>
-                    {item.wet&&<span style={{fontSize:'8px',color:'var(--ink-blue)'}}>mouillé</span>}
-                  </>):<span style={{color:'var(--paper-edge)',fontSize:'12px'}}>—</span>}
-                </div>
-              );
-            })}
-          </div>
-          {player.bonusMoral&&<div style={{marginTop:'6px',fontFamily:'var(--font-type)',fontSize:'10px',color:'var(--gold-deep)',background:'rgba(200,157,63,.1)',border:'1px solid var(--gold)',borderRadius:'2px',padding:'3px 8px',textAlign:'center'}}>🙏 Bénédiction de départ</div>}
+        {/* inventory icons */}
+        <div style={{display:'flex',gap:'3px',flexWrap:'wrap'}}>
+          {Array.from({length:MAX_SLOTS}).map((_,si)=>{
+            const item=slots[si]; const r=item?getRes(item.resourceId):null;
+            return (
+              <div key={si} className={`inv-icon${item?' filled':''}`}>
+                {item?(<>
+                  <span style={{lineHeight:1,opacity:item.wet?.5:1}}>{r?.icon||'?'}</span>
+                  {item.portions!=null&&<span style={{position:'absolute',bottom:'0',right:'1px',fontSize:'8px',fontFamily:'var(--font-type)',color:'var(--ink)',lineHeight:1,background:'rgba(241,231,207,.85)',padding:'0 1px',borderRadius:'1px'}}>{item.portions}</span>}
+                </>):<span style={{color:'var(--paper-edge)',fontSize:'9px'}}>—</span>}
+              </div>
+            );
+          })}
         </div>
+        {player.bonusMoral&&<div style={{marginTop:'4px',fontFamily:'var(--font-type)',fontSize:'9px',color:'var(--gold-deep)',textAlign:'center'}}>🙏 Béni</div>}
       </>)}
     </div>
   );
